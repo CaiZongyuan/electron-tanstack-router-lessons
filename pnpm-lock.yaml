@@ -203,6 +203,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      lucide-react:
+        specifier: ^0.545.0
+        version: 0.545.0(react@19.2.7)
       react:
         specifier: 'catalog:'
         version: 19.2.7
@@ -234,6 +237,9 @@ importers:
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.16(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      lucide-react:
+        specifier: ^0.545.0
+        version: 0.545.0(react@19.2.7)
       react:
         specifier: 'catalog:'
         version: 19.2.7

@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     "./layout/*": "./layout/*.tsx",
-    "./home/*": "./home/*.tsx"
+    "./home/*": "./home/*.tsx",
+    "./workspace/*": "./workspace/*.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -13,7 +14,8 @@
   "dependencies": {
     "@demo/core": "workspace:*",
     "@demo/ui": "workspace:*",
-    "@tanstack/react-router": "catalog:"
+    "@tanstack/react-router": "catalog:",
+    "lucide-react": "^0.545.0"
   },
   "peerDependencies": {
     "react": "catalog:",
