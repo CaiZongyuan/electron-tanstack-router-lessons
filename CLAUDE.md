@@ -1,3 +1,11 @@
+## 工作方式（与用户协作，必读）
+
+- **包安装与运行命令由用户手动执行**：`pnpm install`、`pnpm dev:*`、`pnpm build`、`pnpm typecheck`、`pnpm test`、打包等会**改变环境或启动进程**的命令，一律交给用户在终端手动跑——这是学习项目，让用户亲手执行以加深理解。Claude 只负责文档与代码的编写，并给出「**待执行命令清单 + 预期结果 + 如何判断通过**」，由用户运行后反馈。
+- Claude 可自主执行：读文件、搜索、写/改文件、git 暂存与提交（提交信息遵循第 13 节规范）。
+- 验证类结论：在用户反馈运行结果之前，**不要声称**「构建通过 / 类型检查通过」之类。改为「请在终端执行 X，预期看到 Y」。
+
+---
+
 ## 1. 这是什么项目
 
 一个**学习项目**。目标：参照 https://github.com/multica-ai/multica 的架构与开发方式，在本仓库复刻一套「**web 与 Electron 桌面端同步开发**」的前端，并做出 multica 风格的主要 UI。multica 仓库本地路径 `/root/Projects/Agents/multica`（pnpm + turbo monorepo，web 用 Next.js、desktop 用 Electron）。
