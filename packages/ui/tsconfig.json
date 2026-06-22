@@ -12,7 +12,6 @@
     "verbatimModuleSyntax": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "baseUrl": ".",
     "paths": {
       "@demo/ui/lib/utils": ["./lib/utils.ts"],
       "@demo/ui/lib/*": ["./lib/*"],
