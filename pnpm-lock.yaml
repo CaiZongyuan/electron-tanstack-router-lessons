@@ -6,6 +6,9 @@ settings:
 
 catalogs:
   default:
+    '@tanstack/react-router':
+      specifier: ^1.170.16
+      version: 1.170.16
     '@types/react':
       specifier: ^19.2.0
       version: 19.2.17
@@ -35,6 +38,9 @@ importers:
       '@demo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@demo/views':
+        specifier: workspace:*
+        version: link:../../packages/views
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.3.1(vite@8.0.16(@types/node@22.20.0)(jiti@2.7.0))
@@ -42,7 +48,7 @@ importers:
         specifier: latest
         version: 0.10.7(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(csstype@3.2.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(solid-js@1.9.13)
       '@tanstack/react-router':
-        specifier: latest
+        specifier: 'catalog:'
         version: 1.170.16(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tanstack/react-router-devtools':
         specifier: latest
@@ -123,6 +129,31 @@ importers:
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.6.0
+    devDependencies:
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.3(@types/react@19.2.17)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/views:
+    dependencies:
+      '@demo/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@tanstack/react-router':
+        specifier: 'catalog:'
+        version: 1.170.16(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: 'catalog:'
+        version: 19.2.7
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.7(react@19.2.7)
     devDependencies:
       '@types/react':
         specifier: 'catalog:'

@@ -1,0 +1,26 @@
+{
+  "name": "@demo/views",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./layout/*": "./layout/*.tsx",
+    "./home/*": "./home/*.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@demo/ui": "workspace:*",
+    "@tanstack/react-router": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "catalog:"
+  }
+}

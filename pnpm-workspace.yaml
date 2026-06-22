@@ -11,3 +11,6 @@ catalog:
   "@types/react": "^19.2.0"
   "@types/react-dom": "^19.2.0"
   typescript: "^6.0.2"
+  # react-router 被 apps/web 与 packages/views 共用，统一版本，
+  # 防止两端各装一份导致 <Outlet>/<Link> 的 context 找不到。
+  "@tanstack/react-router": "^1.170.16"
