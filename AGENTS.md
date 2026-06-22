@@ -1,11 +1,3 @@
-## 工作方式（与用户协作，必读）
-
-- **安装、构建、类型检查、测试等命令由 Claude 直接执行**：`pnpm install`、`pnpm build`、`pnpm typecheck`、`pnpm test`、打包等命令，Claude 在 Bash 里直接跑并据结果推进，不再交给用户手动执行。长时运行的开发服务器（`pnpm dev:web` / `pnpm dev:desktop`）按需后台启动、验证后停掉。
-- Claude 可自主执行：读文件、搜索、写/改文件、运行上述命令、git 暂存与提交（提交信息遵循第 13 节规范）。
-- 验证类结论：只有 Claude 自己跑过相应命令后，才能声称「构建通过 / 类型检查通过」；没跑过就明说跳过、不要断言。
-
----
-
 ## 1. 这是什么项目
 
 一个**学习项目**。目标：参照 https://github.com/multica-ai/multica 的架构与开发方式，在本仓库复刻一套「**web 与 Electron 桌面端同步开发**」的前端，并做出 multica 风格的主要 UI。multica 仓库本地路径 `/root/Projects/Agents/multica` 或者 `D:\Projects\src\multica`（pnpm + turbo monorepo，web 用 Next.js、desktop 用 Electron）。
