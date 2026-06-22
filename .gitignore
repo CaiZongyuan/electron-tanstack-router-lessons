@@ -1,0 +1,97 @@
+# ---------- Dependencies ----------
+# pnpm hoists node_modules per-workspace; one recursive rule covers all apps
+node_modules/
+.pnpm-store/
+pnpm-debug.log*
+# Lockfiles SHOULD be committed (kept tracked)
+
+# ---------- Build output ----------
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+.target/
+*.tsbuildinfo
+
+# ---------- Vite ----------
+.vite/
+
+# ---------- TanStack Router (file-router) ----------
+.tanstack/
+# routeTree.gen.ts is generated but intentionally committed
+
+# ---------- Vitest / test coverage ----------
+coverage/
+.nyc_output/
+
+# ---------- Electron / electron-builder ----------
+dist-electron/
+release/
+release-builds/
+extraResources/
+# Packaged installers / archives
+*.exe
+*.msi
+*.nsis
+*.dmg
+*.pkg
+*.app
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.blockmap
+*.snap.json
+
+# ---------- Hono / server runtimes ----------
+.nitro/
+.output/
+.wrangler/
+.dev.vars
+
+# ---------- TS / framework caches ----------
+.turbo/
+.vinxi/
+.eslintcache
+.cache/
+
+# ---------- Logs ----------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---------- Env & secrets ----------
+.env
+.env.*
+!.env.example
+!.env.sample
+*.local
+
+# ---------- OS ----------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ---------- Editors ----------
+.idea/
+*.swp
+*.swo
+*~
+# Note: .vscode/ is kept (apps/web/.vscode/settings.json is committed)
+
+# ---------- Misc ----------
+*.tgz
+*.tar.gz
+*.zip
+__unconfig*
+todos.json
