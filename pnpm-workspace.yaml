@@ -1,3 +1,13 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# catalog：全仓库共享的关键库版本单一来源。
+# 各 package.json 写 "react": "catalog:" 即引用此处的版本，
+# 避免多包版本漂移导致「两个 React 实例」的 hooks 报错。
+catalog:
+  react: "^19.2.0"
+  react-dom: "^19.2.0"
+  "@types/react": "^19.2.0"
+  "@types/react-dom": "^19.2.0"
+  typescript: "^6.0.2"

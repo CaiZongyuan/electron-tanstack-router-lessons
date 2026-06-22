@@ -1,5 +1,9 @@
-
 @import "tailwindcss";
+@import "@demo/ui/styles/tokens.css";
+
+/* 让 Tailwind 扫描共享包 @demo/ui 里的类名。
+   路径相对本文件：src → web → apps → 根，再进 packages/ui。 */
+@source "../../../packages/ui";
 
 * {
   box-sizing: border-box;
@@ -14,4 +18,3 @@ body,
 body {
   margin: 0;
 }
-
