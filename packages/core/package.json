@@ -1,19 +1,14 @@
 {
-  "name": "@demo/views",
+  "name": "@demo/core",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
-    "./layout/*": "./layout/*.tsx",
-    "./home/*": "./home/*.tsx"
+    "./platform/*": "./platform/*.ts",
+    "./platform/context": "./platform/context.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@demo/core": "workspace:*",
-    "@demo/ui": "workspace:*",
-    "@tanstack/react-router": "catalog:"
   },
   "peerDependencies": {
     "react": "catalog:",

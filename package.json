@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.12.3",
   "scripts": {
     "dev:web": "turbo dev --filter=@demo/web",
+    "dev:desktop": "turbo dev --filter=@demo/desktop",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "ui:add": "cd packages/ui && npx shadcn@latest add"
@@ -14,6 +15,7 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "electron",
       "esbuild",
       "lightningcss"
     ]

@@ -1,10 +1,8 @@
 @import "tailwindcss";
 @import "@demo/ui/styles/tokens.css";
 
-/* 让 Tailwind 扫描共享包里的类名。
-   路径相对本文件：src → web → apps → 根，再进 packages/<pkg>。 */
-@source "../../../packages/ui";
-@source "../../../packages/views";
+@source "../../../../../packages/ui";
+@source "../../../../../packages/views";
 
 * {
   box-sizing: border-box;
@@ -12,7 +10,7 @@
 
 html,
 body,
-#app {
+#root {
   height: 100%;
   min-height: 100%;
 }

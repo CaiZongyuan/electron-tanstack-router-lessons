@@ -6,7 +6,7 @@ import { Link, Outlet } from '@tanstack/react-router'
 // 平台专属外壳（Electron 窗口控件、浏览器专属工具栏等）不放在这里，留到 app 层。
 export function AppLayout() {
   return (
-    <div className="flex min-h-full flex-col bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="flex h-12 items-center gap-4 border-b border-border px-4">
         <Link
           to="/"
