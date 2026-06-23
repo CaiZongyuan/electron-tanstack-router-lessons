@@ -12,8 +12,8 @@ declare global {
       daemonGetStatus(): Promise<import('@demo/core/daemon/client').DaemonStatus>
       daemonGetHealth(): Promise<import('@demo/core/daemon/client').DaemonHealth | null>
       daemonCheckClaude(): Promise<import('@demo/core/daemon/client').ClaudeStatus>
-      daemonSaveApiKey(key: string): Promise<void>
-      daemonGetApiKey(): Promise<string | null>
+      daemonGetClaudeConfig(): Promise<import('@demo/core/daemon/client').ClaudeConfigInfo>
+      daemonApplyZhipu(token: string): Promise<void>
       daemonRunTask(
         req: import('@demo/core/daemon/task').TaskRunRequest,
       ): Promise<{ task_id: string }>

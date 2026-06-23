@@ -3,7 +3,7 @@
 import { ipcMain, type BrowserWindow } from "electron";
 import type { DaemonHealth } from "@demo/core/daemon/client";
 import type { TaskRunRequest } from "@demo/core/daemon/task";
-import { checkClaude, getApiKey, saveApiKey } from "../claude-installer";
+import { applyZhipuConfig, checkClaude, readClaudeConfigInfo } from "../claude-installer";
 import { DAEMON_HEALTH_PORT, type DaemonManager } from "../daemon-manager";
 
 interface RegisterOpts {
@@ -89,9 +89,9 @@ export function registerDaemonIpc(opts: RegisterOpts): void {
   // 检测本机 claude（带 npm global PATH 探测 + 认证状态），缺失/未认证时 renderer 引导。
   ipcMain.handle("daemon:check-claude", async () => checkClaude());
 
-  // API key 配置：daemon spawn 时注入 ANTHROPIC_API_KEY（透传给 claude）。
-  ipcMain.handle("daemon:save-api-key", (_e, key: string) => saveApiKey(key));
-  ipcMain.handle("daemon:get-api-key", () => getApiKey());
+  // 读 claude settings.json（UI 显示路径/内容/认证状态）；写智谱默认配置（用户填 token）。
+  ipcMain.handle("daemon:get-claude-config", () => readClaudeConfigInfo());
+  ipcMain.handle("daemon:apply-zhipu", (_e, token: string) => applyZhipuConfig(token));
 
   // manager 状态变化主动推给 renderer（renderer 订阅而非轮询）。
   manager.onStatusChange((status) => {

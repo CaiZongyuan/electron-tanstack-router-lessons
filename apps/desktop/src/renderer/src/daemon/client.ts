@@ -23,11 +23,11 @@ export const desktopDaemonClient: DaemonClient = {
   checkClaude() {
     return window.desktopAPI.daemonCheckClaude();
   },
-  saveApiKey(key: string) {
-    return window.desktopAPI.daemonSaveApiKey(key);
+  getClaudeConfig() {
+    return window.desktopAPI.daemonGetClaudeConfig();
   },
-  getApiKey() {
-    return window.desktopAPI.daemonGetApiKey();
+  applyZhipuConfig(token: string) {
+    return window.desktopAPI.daemonApplyZhipu(token);
   },
 
   async streamTaskEvents(taskId, onEvent) {

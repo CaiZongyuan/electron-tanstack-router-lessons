@@ -1,40 +1,100 @@
-// 检测本机 claude code 安装 + 认证状态。desktop main 独立实现一份
-// （不依赖 daemon 包的 probeClaude——desktop main 不 import daemon）。
+// claude code 安装检测 + 配置（编辑 ~/.claude/settings.json）。desktop main 独立实现。
+// 关键：claude 自己读 settings.json 的 env 块，daemon 不注入 env——应用只是该文件的 GUI 编辑器。
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { delimiter, join } from "node:path";
 import { homedir, platform } from "node:os";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { app } from "electron";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import type { ClaudeStatus } from "@demo/core/daemon/client";
 
 const execFileP = promisify(execFile);
 const isWin = platform() === "win32";
 
-// API key 存 desktop userData（本地工具，明文 + 0600 权限，不进 git）。
-const apiKeyFile = (): string => join(app.getPath("userData"), "anthropic-key");
+// ---- claude settings.json（~/.claude/settings.json）----
 
-export function getApiKey(): string | null {
+export interface ClaudeSettings {
+  env?: Record<string, string>;
+  permissions?: { allow?: string[]; deny?: string[] };
+  [k: string]: unknown;
+}
+
+export function claudeSettingsPath(): string {
+  return join(homedir(), ".claude", "settings.json");
+}
+
+export function readClaudeSettings(): ClaudeSettings {
   try {
-    const v = readFileSync(apiKeyFile(), "utf8").trim();
-    return v || null;
+    return JSON.parse(readFileSync(claudeSettingsPath(), "utf8")) as ClaudeSettings;
   } catch {
-    return null;
+    return {};
   }
 }
 
-export function saveApiKey(key: string): void {
-  writeFileSync(apiKeyFile(), key, { mode: 0o600 });
+export function writeClaudeSettings(s: ClaudeSettings): void {
+  mkdirSync(join(homedir(), ".claude"), { recursive: true });
+  writeFileSync(claudeSettingsPath(), `${JSON.stringify(s, null, 2)}\n`, { mode: 0o600 });
 }
 
-// 认证状态：应用配了 API key，或 claude OAuth 凭证（终端 claude 登过）存在。
+// 智谱（bigmodel）Anthropic 兼容默认 env。用户只需填 ANTHROPIC_AUTH_TOKEN。
+// 注意：智谱用 AUTH_TOKEN（非 API_KEY）。
+export const ZHIPU_DEFAULT_ENV: Record<string, string> = {
+  ANTHROPIC_BASE_URL: "https://open.bigmodel.cn/api/anthropic",
+  ANTHROPIC_MODEL: "glm-5.2",
+  ANTHROPIC_DEFAULT_SONNET_MODEL: "glm-5.2",
+  ANTHROPIC_DEFAULT_SONNET_MODEL_NAME: "glm-5.2",
+  ANTHROPIC_DEFAULT_OPUS_MODEL: "glm-5.2",
+  ANTHROPIC_DEFAULT_OPUS_MODEL_NAME: "glm-5.2",
+  ANTHROPIC_DEFAULT_HAIKU_MODEL: "glm-4.7",
+  ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME: "glm-4.7",
+  ANTHROPIC_DEFAULT_FABLE_MODEL: "glm-5.2",
+  ANTHROPIC_DEFAULT_FABLE_MODEL_NAME: "glm-5.2",
+};
+
+// 把智谱默认 env + 用户 token 合并进 settings.json（保留 permissions / alwaysThinkingEnabled 等）。
+export function applyZhipuConfig(token: string): ClaudeSettings {
+  const current = readClaudeSettings();
+  const next: ClaudeSettings = {
+    ...current,
+    env: {
+      ...current.env,
+      ...ZHIPU_DEFAULT_ENV,
+      ANTHROPIC_AUTH_TOKEN: token,
+    },
+  };
+  writeClaudeSettings(next);
+  return next;
+}
+
+// 认证检测：settings.env 有 token（AUTH_TOKEN 或 API_KEY）+ BASE_URL。
 export function isClaudeAuthenticated(): boolean {
-  if (getApiKey()) return true;
-  return existsSync(join(homedir(), ".claude", ".credentials.json"));
+  const env = readClaudeSettings().env ?? {};
+  return Boolean(
+    (env.ANTHROPIC_AUTH_TOKEN || env.ANTHROPIC_API_KEY) && env.ANTHROPIC_BASE_URL,
+  );
 }
 
-// GUI 应用继承的 PATH 通常不含 npm global 目录（Windows %APPDATA%\npm），
-// 导致 spawn 不到 claude。探测 npm prefix 并追加进 PATH。
+// 读配置信息（给 UI 显示路径 + 内容 + 认证状态）。
+export function readClaudeConfigInfo(): {
+  path: string;
+  content: string;
+  exists: boolean;
+  authenticated: boolean;
+} {
+  const path = claudeSettingsPath();
+  const exists = existsSync(path);
+  let content = "";
+  if (exists) {
+    try {
+      content = readFileSync(path, "utf8");
+    } catch {
+      content = "";
+    }
+  }
+  return { path, content, exists, authenticated: isClaudeAuthenticated() };
+}
+
+// ---- 安装检测 ----
+
 async function resolveCliEnv(): Promise<NodeJS.ProcessEnv> {
   const pathParts = (process.env.PATH ?? "").split(delimiter);
   try {
@@ -54,7 +114,6 @@ async function resolveCliEnv(): Promise<NodeJS.ProcessEnv> {
   return { ...process.env, PATH: pathParts.filter(Boolean).join(delimiter) };
 }
 
-// 检测 claude：spawn `claude --version`（带探测后的 PATH）+ 认证状态。
 export async function checkClaude(): Promise<ClaudeStatus> {
   const env = await resolveCliEnv();
   try {

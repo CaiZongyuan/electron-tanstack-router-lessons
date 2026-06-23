@@ -48,11 +48,20 @@ export interface DaemonClient {
   ): Promise<void>;
   // 取消 task（DELETE）。
   cancelTask(taskId: string): Promise<void>;
-  // 检测本机 claude 是否安装（仅 desktop 实现；web 无此能力，不实现该方法）。
+  // 检测本机 claude 是否安装 + 认证（仅 desktop；web 不实现）。
   checkClaude?(): Promise<ClaudeStatus>;
-  // 读写 claude API key（仅 desktop，存本地；daemon spawn 时注入 ANTHROPIC_API_KEY）。
-  saveApiKey?(key: string): Promise<void>;
-  getApiKey?(): Promise<string | null>;
+  // 读 claude settings.json（路径 + 内容 + 是否存在 + 认证状态）。
+  getClaudeConfig?(): Promise<ClaudeConfigInfo>;
+  // 写智谱默认配置（base_url + glm 模型 + token）到 settings.json。
+  applyZhipuConfig?(token: string): Promise<void>;
+}
+
+// claude settings.json 配置信息（路径 + 原文 + 是否存在 + 认证状态）。
+export interface ClaudeConfigInfo {
+  path: string;
+  content: string;
+  exists: boolean;
+  authenticated: boolean;
 }
 
 // claude 安装 + 认证检测结果。desktop main 探测后经 IPC 返回，renderer banner 据此提示。

@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import type { ClaudeStatus, DaemonHealth, DaemonStatus } from '@demo/core/daemon/client'
+import type { ClaudeConfigInfo, ClaudeStatus, DaemonHealth, DaemonStatus } from '@demo/core/daemon/client'
 import type { TaskEvent, TaskRunRequest } from '@demo/core/daemon/task'
 
 const api = {
@@ -24,11 +24,11 @@ const api = {
   daemonCheckClaude(): Promise<ClaudeStatus> {
     return ipcRenderer.invoke('daemon:check-claude')
   },
-  daemonSaveApiKey(key: string): Promise<void> {
-    return ipcRenderer.invoke('daemon:save-api-key', key)
+  daemonGetClaudeConfig(): Promise<ClaudeConfigInfo> {
+    return ipcRenderer.invoke('daemon:get-claude-config')
   },
-  daemonGetApiKey(): Promise<string | null> {
-    return ipcRenderer.invoke('daemon:get-api-key')
+  daemonApplyZhipu(token: string): Promise<void> {
+    return ipcRenderer.invoke('daemon:apply-zhipu', token)
   },
   daemonRunTask(req: TaskRunRequest): Promise<{ task_id: string }> {
     return ipcRenderer.invoke('daemon:run-task', req)
