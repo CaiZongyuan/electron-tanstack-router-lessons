@@ -11,6 +11,7 @@ import { Button } from "@demo/ui/components/ui/button";
 import { Input } from "@demo/ui/components/ui/input";
 import { cn } from "@demo/ui/lib/utils";
 import { useDaemonStatus } from "./use-daemon-status";
+import { ClaudeMissingBanner } from "./claude-missing-banner";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -124,6 +125,11 @@ export function ChatView() {
           {agent ? <span className="text-foreground/70">· {agent}</span> : null}
         </div>
       </header>
+
+      {/* claude 缺失引导（仅 desktop） */}
+      <div className="shrink-0 px-4 pt-2">
+        <ClaudeMissingBanner />
+      </div>
 
       {/* 消息流 */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">

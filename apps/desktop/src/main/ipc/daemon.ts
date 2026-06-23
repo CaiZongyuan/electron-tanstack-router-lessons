@@ -3,6 +3,7 @@
 import { ipcMain, type BrowserWindow } from "electron";
 import type { DaemonHealth } from "@demo/core/daemon/client";
 import type { TaskRunRequest } from "@demo/core/daemon/task";
+import { checkClaude } from "../claude-installer";
 import { DAEMON_HEALTH_PORT, type DaemonManager } from "../daemon-manager";
 
 interface RegisterOpts {
@@ -84,6 +85,9 @@ export function registerDaemonIpc(opts: RegisterOpts): void {
   ipcMain.handle("daemon:unsubscribe-events", (_e, taskId: string) => {
     streams.get(taskId)?.abort();
   });
+
+  // 检测本机 claude（带 npm global PATH 探测），缺失时 renderer 引导安装。
+  ipcMain.handle("daemon:check-claude", async () => checkClaude());
 
   // manager 状态变化主动推给 renderer（renderer 订阅而非轮询）。
   manager.onStatusChange((status) => {

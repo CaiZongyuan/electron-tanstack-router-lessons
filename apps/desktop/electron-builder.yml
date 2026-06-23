@@ -1,0 +1,24 @@
+# electron-builder 配置（见 docs/daemon/08）。
+# 打 desktop 安装包：pnpm -C apps/desktop build:desktop
+# （会先打 daemon → electron-vite build → electron-builder）。
+appId: com.demo.desktop-web-demo
+productName: demo
+directories:
+  output: release
+# desktop 自己的产物（main/preload/renderer 编译输出）
+files:
+  - out/**/*
+# daemon 单文件产物拷进安装包，prod 下 main 用 node 跑它（ELECTRON_RUN_AS_NODE）。
+extraResources:
+  - from: ../daemon/dist/main.cjs
+    to: daemon/daemon.cjs
+    filter: ["**/*"]
+asarUnpack:
+  - resources/**
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

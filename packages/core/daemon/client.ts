@@ -48,4 +48,13 @@ export interface DaemonClient {
   ): Promise<void>;
   // 取消 task（DELETE）。
   cancelTask(taskId: string): Promise<void>;
+  // 检测本机 claude 是否安装（仅 desktop 实现；web 无此能力，不实现该方法）。
+  checkClaude?(): Promise<ClaudeStatus>;
+}
+
+// claude 安装检测结果。desktop main 探测后经 IPC 返回，renderer banner 据此提示。
+export interface ClaudeStatus {
+  installed: boolean;
+  version: string | null;
+  error: string | null;
 }

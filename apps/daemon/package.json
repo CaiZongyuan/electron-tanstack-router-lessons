@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
+    "build": "tsup",
     "agent:cli": "tsx src/agent/cli.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -15,6 +16,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "tsup": "^8.5.1",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }

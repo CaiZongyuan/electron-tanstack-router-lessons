@@ -40,6 +40,10 @@ const backend = new ClaudeBackend({ logger });
 const taskStore = new TaskStore({ maxConcurrent: config.maxTasks, logger });
 const taskRunner = new TaskRunner({ backend, store: taskStore, logger });
 
+// healthServer / tick 提到模块顶层，abort listener（同步注册）才能引用。
+let healthServer: Server | undefined;
+let tick: NodeJS.Timeout | undefined;
+
 let shuttingDown = false;
 function shutdown(reason: string): void {
   if (shuttingDown) return;
@@ -51,54 +55,8 @@ function shutdown(reason: string): void {
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-// 启动 HTTP server。端口被占（另一个 daemon 在跑）时清晰报错退出。
-let healthServer: Server | undefined;
-try {
-  healthServer = await startHealthServer({
-    port: config.healthPort,
-    logger,
-    getState: () => runtime,
-    shutdown,
-    routeTask: (req, res, url) =>
-      handleTaskRoute(req, res, url, { store: taskStore, runner: taskRunner, logger }),
-    getActiveTaskCount: () => taskStore.runningCount(),
-  });
-} catch (err) {
-  const e = err as NodeJS.ErrnoException;
-  if (e.code === "EADDRINUSE") {
-    logger.error(
-      { port: config.healthPort },
-      "another daemon is already running; set DEMO_DAEMON_HEALTH_PORT to use a different port",
-    );
-    process.exit(1);
-  }
-  logger.error({ err }, "failed to start health server");
-  process.exit(1);
-}
-
-// preflight：探测 claude。这一步有延迟（spawn 一次 CLI），所以放在
-// health server 起来之后、ready 之前——liveness 已就绪，readiness 等探测完。
-const claude = await probeClaude();
-if (claude.available) {
-  runtime.agents = ["claude"];
-  logger.info({ version: claude.version }, "claude detected");
-} else {
-  logger.warn(
-    { err: claude.error },
-    "claude not available; agent tasks will fail",
-  );
-}
-runtime.ready = true;
-logger.info("daemon ready");
-
-// 主循环：每 5 秒打一行 alive。health server 已接管 liveness，
-// 这里只是开发时看 daemon 还在的视觉信号。阶段 5 之后会被 task loop 替换。
-const tick = setInterval(() => {
-  logger.debug("alive");
-}, 5000);
-
 controller.signal.addEventListener("abort", () => {
-  clearInterval(tick);
+  if (tick) clearInterval(tick);
   // 取消所有未结束 task——abort 同步触发 backend 的 killProcessTree，
   // 进程树在 process.exit 前就被清掉，不残留孤儿 claude。
   taskStore.cancelAll();
@@ -107,4 +65,54 @@ controller.signal.addEventListener("abort", () => {
   setTimeout(() => process.exit(0), 50);
 });
 
-logger.info({ config }, "daemon started");
+// 启动逻辑包进 async main()：避免 top-level await——
+// tsup CJS 打包不支持 TLA（见 docs/daemon/08 第 6 节陷阱）。
+async function main(): Promise<void> {
+  try {
+    healthServer = await startHealthServer({
+      port: config.healthPort,
+      logger,
+      getState: () => runtime,
+      shutdown,
+      routeTask: (req, res, url) =>
+        handleTaskRoute(req, res, url, { store: taskStore, runner: taskRunner, logger }),
+      getActiveTaskCount: () => taskStore.runningCount(),
+    });
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException;
+    if (e.code === "EADDRINUSE") {
+      logger.error(
+        { port: config.healthPort },
+        "another daemon is already running; set DEMO_DAEMON_HEALTH_PORT to use a different port",
+      );
+      process.exit(1);
+    }
+    logger.error({ err }, "failed to start health server");
+    process.exit(1);
+  }
+
+  // preflight：探测 claude。这一步有延迟（spawn 一次 CLI），所以放在
+  // health server 起来之后、ready 之前——liveness 已就绪，readiness 等探测完。
+  const claude = await probeClaude();
+  if (claude.available) {
+    runtime.agents = ["claude"];
+    logger.info({ version: claude.version }, "claude detected");
+  } else {
+    logger.warn(
+      { err: claude.error },
+      "claude not available; agent tasks will fail",
+    );
+  }
+  runtime.ready = true;
+  logger.info("daemon ready");
+
+  // 主循环：每 5 秒打一行 alive。health server 已接管 liveness，
+  // 这里只是开发时看 daemon 还在的视觉信号。
+  tick = setInterval(() => {
+    logger.debug("alive");
+  }, 5000);
+
+  logger.info({ config }, "daemon started");
+}
+
+void main();

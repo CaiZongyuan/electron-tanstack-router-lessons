@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import type { DaemonHealth, DaemonStatus } from '@demo/core/daemon/client'
+import type { ClaudeStatus, DaemonHealth, DaemonStatus } from '@demo/core/daemon/client'
 import type { TaskEvent, TaskRunRequest } from '@demo/core/daemon/task'
 
 const api = {
@@ -20,6 +20,9 @@ const api = {
   },
   daemonGetHealth(): Promise<DaemonHealth | null> {
     return ipcRenderer.invoke('daemon:get-health')
+  },
+  daemonCheckClaude(): Promise<ClaudeStatus> {
+    return ipcRenderer.invoke('daemon:check-claude')
   },
   daemonRunTask(req: TaskRunRequest): Promise<{ task_id: string }> {
     return ipcRenderer.invoke('daemon:run-task', req)

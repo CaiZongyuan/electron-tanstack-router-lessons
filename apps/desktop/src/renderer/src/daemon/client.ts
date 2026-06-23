@@ -20,6 +20,9 @@ export const desktopDaemonClient: DaemonClient = {
   cancelTask(taskId) {
     return window.desktopAPI.daemonCancelTask(taskId);
   },
+  checkClaude() {
+    return window.desktopAPI.daemonCheckClaude();
+  },
 
   async streamTaskEvents(taskId, onEvent) {
     // 先订阅（按 taskId 过滤），再 invoke——避免漏首包（daemon store 同步回放，

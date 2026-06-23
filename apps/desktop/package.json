@@ -1,11 +1,13 @@
 {
   "name": "@demo/desktop",
+  "version": "0.0.0",
   "private": true,
   "main": "./out/main/index.js",
   "scripts": {
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
     "build": "pnpm typecheck && electron-vite build",
+    "build:desktop": "pnpm --filter @demo/daemon build && electron-vite build && electron-builder",
     "typecheck": "pnpm typecheck:node && pnpm typecheck:web",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false"
@@ -29,6 +31,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "^5.2.0",
     "electron": "^42.4.1",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "typescript": "catalog:",
     "vite": "^7.3.5"

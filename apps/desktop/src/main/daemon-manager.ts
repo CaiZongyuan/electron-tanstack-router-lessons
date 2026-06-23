@@ -5,7 +5,7 @@
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
 import { platform } from "node:os";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { app } from "electron";
 import type { DaemonStatus } from "@demo/core/daemon/client";
 
@@ -61,10 +61,14 @@ export class DaemonManager {
     this.log.info(`[daemon-manager] spawn ${spec.cmd} ${spec.args.join(" ")}`);
     this.child = spawn(spec.cmd, spec.args, {
       cwd: spec.cwd,
-      env: { ...process.env, DEMO_DAEMON_HEALTH_PORT: String(DAEMON_HEALTH_PORT) },
+      env: {
+        ...process.env,
+        DEMO_DAEMON_HEALTH_PORT: String(DAEMON_HEALTH_PORT),
+        ...spec.extraEnv,
+      },
       windowsHide: true,
-      // Windows 下 pnpm 是 pnpm.cmd，必须 shell 才找得到。
-      shell: platform() === "win32",
+      // dev: Windows 下 pnpm 是 pnpm.cmd 要 shell；prod: node 直接跑无需 shell。
+      shell: spec.useShell ?? false,
       stdio: ["ignore", "pipe", "pipe"],
     });
 
@@ -158,14 +162,33 @@ export class DaemonManager {
     for (const cb of this.listeners) cb(status);
   }
 
-  // dev: pnpm -C <daemonDir> start；prod（阶段 7）: node 打包产物。
-  private resolveSpawnCommand(): { cmd: string; args: string[]; cwd: string } {
+  // dev: pnpm -C <daemonDir> start；prod: electron 自带 Node 跑打包进 resources 的 daemon.cjs。
+  private resolveSpawnCommand(): SpawnSpec {
     if (app.isPackaged) {
-      throw new Error("packaged daemon spawn 未实现（阶段 7 处理）");
+      return {
+        cmd: process.execPath,
+        args: [join(process.resourcesPath, "daemon", "daemon.cjs")],
+        // ELECTRON_RUN_AS_NODE 让 electron 进程当 Node 跑（不启 GUI）。
+        extraEnv: { ELECTRON_RUN_AS_NODE: "1" },
+        useShell: false,
+      };
     }
     const daemonDir = resolveDaemonDir();
-    return { cmd: "pnpm", args: ["-C", daemonDir, "start"], cwd: daemonDir };
+    return {
+      cmd: "pnpm",
+      args: ["-C", daemonDir, "start"],
+      cwd: daemonDir,
+      useShell: platform() === "win32",
+    };
   }
+}
+
+interface SpawnSpec {
+  cmd: string;
+  args: string[];
+  cwd?: string;
+  extraEnv?: NodeJS.ProcessEnv;
+  useShell?: boolean;
 }
 
 // 定位 apps/daemon 目录。electron-vite 编译后 main 的 __dirname 因 dev/prod 而异，
