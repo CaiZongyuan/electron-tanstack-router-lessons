@@ -57,6 +57,9 @@ app.whenReady().then(() => {
 
   createWindow()
 
+  // 自动拉起 daemon（先探 /health 复用已有实例，否则 spawn）。renderer 经 IPC 看 status。
+  void daemonManager.start()
+
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

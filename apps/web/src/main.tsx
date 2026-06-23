@@ -14,6 +14,9 @@ declare module '@tanstack/react-router' {
   }
 }
 
+// 液态玻璃风格默认深色（见 docs/frontend/08）。
+document.documentElement.classList.add('dark')
+
 const rootElement = document.getElementById('app')!
 
 if (!rootElement.innerHTML) {

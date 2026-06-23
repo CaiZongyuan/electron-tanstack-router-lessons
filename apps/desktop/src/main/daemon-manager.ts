@@ -48,6 +48,15 @@ export class DaemonManager {
     this.intentionalStop = false;
     this.setStatus("starting");
 
+    // 先探：端口上已有 daemon 在跑（上次残留或外部启动）→ 直接复用，
+    // 不重复 spawn——避免 EADDRINUSE 退出造成的「启动即停」。
+    if (await this.probeRunning()) {
+      this.log.info("[daemon-manager] detected running daemon, reuse");
+      this.startPolling();
+      this.setStatus("running");
+      return;
+    }
+
     const spec = this.resolveSpawnCommand();
     this.log.info(`[daemon-manager] spawn ${spec.cmd} ${spec.args.join(" ")}`);
     this.child = spawn(spec.cmd, spec.args, {
@@ -127,6 +136,19 @@ export class DaemonManager {
       if (h.status === "running") this.setStatus("running");
     } catch {
       // starting 中 daemon 还没起来正常；running 后若崩溃由 child exit handler 报 error。
+    }
+  }
+
+  // 探测端口上是否已有 running 的 daemon（复用，避免重复 spawn 撞端口）。
+  private async probeRunning(): Promise<boolean> {
+    try {
+      const res = await fetch(`http://127.0.0.1:${DAEMON_HEALTH_PORT}/health`, {
+        signal: AbortSignal.timeout(1500),
+      });
+      const h = (await res.json()) as { status: string };
+      return h.status === "running";
+    } catch {
+      return false;
     }
   }
 

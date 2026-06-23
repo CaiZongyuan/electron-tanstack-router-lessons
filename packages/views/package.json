@@ -16,7 +16,9 @@
     "@demo/core": "workspace:*",
     "@demo/ui": "workspace:*",
     "@tanstack/react-router": "catalog:",
-    "lucide-react": "^0.545.0"
+    "lucide-react": "^0.545.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "peerDependencies": {
     "react": "catalog:",
