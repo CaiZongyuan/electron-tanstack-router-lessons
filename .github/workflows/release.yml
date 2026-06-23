@@ -41,8 +41,8 @@ jobs:
 
       - name: Package (electron-builder → win nsis)
         run: pnpm -C apps/desktop exec electron-builder
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # 不传 GH_TOKEN：否则 electron-builder 尝试自动 publish（需检测 repository），
+        # 这里只打包，上传交给下面的 softprops/action-gh-release。
 
       - name: Upload artifacts to Release
         if: startsWith(github.ref, 'refs/tags/')
