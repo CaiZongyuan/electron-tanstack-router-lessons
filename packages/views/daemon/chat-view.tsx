@@ -76,10 +76,15 @@ export function ChatView() {
     if (e.type === "log" && e.text?.startsWith("system:")) return;
     if (e.type === "text" && e.text) {
       appendAssistantText(e.text);
-    } else if (e.type === "error" && e.text) {
-      appendAssistantText(`\n\n> **错误**：${e.text}`);
     } else if (e.type === "tool_use" && e.tool) {
-      appendAssistantText(`\n\n\`工具：${e.tool}\``);
+      appendAssistantText(`\n\n工具调用：\`${e.tool}\``);
+    } else if (e.type === "tool_result" && e.output) {
+      appendAssistantText(`\n\n\`\`\`\n${truncate(e.output, 2000)}\n\`\`\``);
+    } else if (e.type === "result" && e.text) {
+      // result 是 claude 最终总结；无工具时常与已显示的 text 重复，去重。
+      appendAssistantTextIfNew(e.text);
+    } else if (e.type === "error" && e.text) {
+      appendAssistantText(`\n\n> 错误：${e.text}`);
     }
   }
 
@@ -89,6 +94,17 @@ export function ChatView() {
         ...last,
         fullText: (last.fullText ?? "") + text,
       })),
+    );
+  }
+
+  // 追加文本但去重：与已显示的完整文本相同时跳过（result 与 text 重复的场景）。
+  function appendAssistantTextIfNew(text: string) {
+    setMessages((m) =>
+      updateLastAssistant(m, (last) =>
+        (last.fullText ?? "").trim() === text.trim()
+          ? last
+          : { ...last, fullText: (last.fullText ?? "") + "\n\n" + text },
+      ),
     );
   }
 
@@ -235,6 +251,11 @@ const mdComponents: Components = {
   h2: ({ children }) => <h2 className="mb-1 mt-3 text-sm font-medium">{children}</h2>,
   h3: ({ children }) => <h3 className="mb-1 mt-3 text-sm font-medium">{children}</h3>,
 };
+
+// 截断过长输出（工具结果可能是大段日志/文件内容）。
+function truncate(s: string, max: number): string {
+  return s.length > max ? `${s.slice(0, max)}\n…（已截断）` : s;
+}
 
 function updateLastAssistant(
   messages: ChatMessage[],
