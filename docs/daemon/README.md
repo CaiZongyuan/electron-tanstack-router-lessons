@@ -21,6 +21,7 @@
 | `06-task-api.md` | 阶段 5：`POST /task/run` + `GET /task/:id/events` NDJSON 流 + `DELETE` 取消；store append-only 回放、runner 状态机、并发上限 |
 | `07-shell-integration.md` | 阶段 6：`DaemonClient` 抽象 + desktop IPC 桥接 + web 直 fetch + 共享 chat UI；daemon-manager 状态机、流式 IPC、CORS |
 | `08-打包与引导安装.md` | 阶段 7：tsup 打 daemon 单文件 + electron-builder extraResources + prod spawn（ELECTRON_RUN_AS_NODE）+ claude 引导安装 |
+| `09-release.md` | 发布到 GitHub Releases：CI 自动打包 + 正确发版流程 + 实战踩坑 |
 
 八阶段已全部完成。
 
