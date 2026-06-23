@@ -8,6 +8,7 @@ import { platform } from "node:os";
 import { join, resolve } from "node:path";
 import { app } from "electron";
 import type { DaemonStatus } from "@demo/core/daemon/client";
+import { getApiKey } from "./claude-installer";
 
 // 与 daemon 默认端口对齐（core DAEMON_HEALTH_PORT_DEFAULT）。
 export const DAEMON_HEALTH_PORT = 19514;
@@ -59,12 +60,15 @@ export class DaemonManager {
 
     const spec = this.resolveSpawnCommand();
     this.log.info(`[daemon-manager] spawn ${spec.cmd} ${spec.args.join(" ")}`);
+    // 注入 ANTHROPIC_API_KEY（用户在应用配的）→ daemon → claude 继承。
+    const apiKey = getApiKey();
     this.child = spawn(spec.cmd, spec.args, {
       cwd: spec.cwd,
       env: {
         ...process.env,
         DEMO_DAEMON_HEALTH_PORT: String(DAEMON_HEALTH_PORT),
         ...spec.extraEnv,
+        ...(apiKey ? { ANTHROPIC_API_KEY: apiKey } : {}),
       },
       windowsHide: true,
       // dev: Windows 下 pnpm 是 pnpm.cmd 要 shell；prod: node 直接跑无需 shell。

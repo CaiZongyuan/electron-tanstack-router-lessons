@@ -24,6 +24,12 @@ const api = {
   daemonCheckClaude(): Promise<ClaudeStatus> {
     return ipcRenderer.invoke('daemon:check-claude')
   },
+  daemonSaveApiKey(key: string): Promise<void> {
+    return ipcRenderer.invoke('daemon:save-api-key', key)
+  },
+  daemonGetApiKey(): Promise<string | null> {
+    return ipcRenderer.invoke('daemon:get-api-key')
+  },
   daemonRunTask(req: TaskRunRequest): Promise<{ task_id: string }> {
     return ipcRenderer.invoke('daemon:run-task', req)
   },

@@ -1,13 +1,37 @@
-// 检测本机 claude code 是否安装。desktop main 独立实现一份
+// 检测本机 claude code 安装 + 认证状态。desktop main 独立实现一份
 // （不依赖 daemon 包的 probeClaude——desktop main 不 import daemon）。
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { delimiter } from "node:path";
-import { platform } from "node:os";
+import { delimiter, join } from "node:path";
+import { homedir, platform } from "node:os";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { app } from "electron";
 import type { ClaudeStatus } from "@demo/core/daemon/client";
 
 const execFileP = promisify(execFile);
 const isWin = platform() === "win32";
+
+// API key 存 desktop userData（本地工具，明文 + 0600 权限，不进 git）。
+const apiKeyFile = (): string => join(app.getPath("userData"), "anthropic-key");
+
+export function getApiKey(): string | null {
+  try {
+    const v = readFileSync(apiKeyFile(), "utf8").trim();
+    return v || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveApiKey(key: string): void {
+  writeFileSync(apiKeyFile(), key, { mode: 0o600 });
+}
+
+// 认证状态：应用配了 API key，或 claude OAuth 凭证（终端 claude 登过）存在。
+export function isClaudeAuthenticated(): boolean {
+  if (getApiKey()) return true;
+  return existsSync(join(homedir(), ".claude", ".credentials.json"));
+}
 
 // GUI 应用继承的 PATH 通常不含 npm global 目录（Windows %APPDATA%\npm），
 // 导致 spawn 不到 claude。探测 npm prefix 并追加进 PATH。
@@ -30,7 +54,7 @@ async function resolveCliEnv(): Promise<NodeJS.ProcessEnv> {
   return { ...process.env, PATH: pathParts.filter(Boolean).join(delimiter) };
 }
 
-// 检测 claude：spawn `claude --version`（带探测后的 PATH）。
+// 检测 claude：spawn `claude --version`（带探测后的 PATH）+ 认证状态。
 export async function checkClaude(): Promise<ClaudeStatus> {
   const env = await resolveCliEnv();
   try {
@@ -41,9 +65,14 @@ export async function checkClaude(): Promise<ClaudeStatus> {
       shell: isWin,
     });
     const m = stdout.trim().match(/(\d+\.\d+\.\d+)/);
-    return { installed: true, version: m?.[1] ?? stdout.trim(), error: null };
+    return {
+      installed: true,
+      version: m?.[1] ?? stdout.trim(),
+      error: null,
+      authenticated: isClaudeAuthenticated(),
+    };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return { installed: false, version: null, error: msg };
+    return { installed: false, version: null, error: msg, authenticated: false };
   }
 }

@@ -50,11 +50,16 @@ export interface DaemonClient {
   cancelTask(taskId: string): Promise<void>;
   // 检测本机 claude 是否安装（仅 desktop 实现；web 无此能力，不实现该方法）。
   checkClaude?(): Promise<ClaudeStatus>;
+  // 读写 claude API key（仅 desktop，存本地；daemon spawn 时注入 ANTHROPIC_API_KEY）。
+  saveApiKey?(key: string): Promise<void>;
+  getApiKey?(): Promise<string | null>;
 }
 
-// claude 安装检测结果。desktop main 探测后经 IPC 返回，renderer banner 据此提示。
+// claude 安装 + 认证检测结果。desktop main 探测后经 IPC 返回，renderer banner 据此提示。
 export interface ClaudeStatus {
   installed: boolean;
   version: string | null;
   error: string | null;
+  // 已认证：应用配了 API key，或 claude OAuth 凭证（~/.claude/）存在。
+  authenticated: boolean;
 }

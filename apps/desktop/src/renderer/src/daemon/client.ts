@@ -23,6 +23,12 @@ export const desktopDaemonClient: DaemonClient = {
   checkClaude() {
     return window.desktopAPI.daemonCheckClaude();
   },
+  saveApiKey(key: string) {
+    return window.desktopAPI.daemonSaveApiKey(key);
+  },
+  getApiKey() {
+    return window.desktopAPI.daemonGetApiKey();
+  },
 
   async streamTaskEvents(taskId, onEvent) {
     // 先订阅（按 taskId 过滤），再 invoke——避免漏首包（daemon store 同步回放，

@@ -3,7 +3,7 @@
 import { ipcMain, type BrowserWindow } from "electron";
 import type { DaemonHealth } from "@demo/core/daemon/client";
 import type { TaskRunRequest } from "@demo/core/daemon/task";
-import { checkClaude } from "../claude-installer";
+import { checkClaude, getApiKey, saveApiKey } from "../claude-installer";
 import { DAEMON_HEALTH_PORT, type DaemonManager } from "../daemon-manager";
 
 interface RegisterOpts {
@@ -86,8 +86,12 @@ export function registerDaemonIpc(opts: RegisterOpts): void {
     streams.get(taskId)?.abort();
   });
 
-  // 检测本机 claude（带 npm global PATH 探测），缺失时 renderer 引导安装。
+  // 检测本机 claude（带 npm global PATH 探测 + 认证状态），缺失/未认证时 renderer 引导。
   ipcMain.handle("daemon:check-claude", async () => checkClaude());
+
+  // API key 配置：daemon spawn 时注入 ANTHROPIC_API_KEY（透传给 claude）。
+  ipcMain.handle("daemon:save-api-key", (_e, key: string) => saveApiKey(key));
+  ipcMain.handle("daemon:get-api-key", () => getApiKey());
 
   // manager 状态变化主动推给 renderer（renderer 订阅而非轮询）。
   manager.onStatusChange((status) => {
