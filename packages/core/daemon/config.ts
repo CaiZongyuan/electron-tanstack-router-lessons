@@ -4,6 +4,7 @@ import { z } from "zod";
 export const DAEMON_HEALTH_PORT_DEFAULT = 19514;
 export const DAEMON_LOG_LEVEL_DEFAULT = "info" as const;
 export const DAEMON_LOG_DIR_DEFAULT = ""; // 空表示用 ~/.demo/daemon
+export const DAEMON_MAX_TASKS_DEFAULT = 4; // 同时执行的 task 上限
 
 // env schema：直接吃 process.env 的形状。
 // 注意：z.coerce.number() 在 raw 是 "" 时会变成 0，被 min(1) 拒绝；
@@ -19,6 +20,12 @@ export const daemonEnvSchema = z.object({
     .enum(["trace", "debug", "info", "warn", "error", "fatal"])
     .default(DAEMON_LOG_LEVEL_DEFAULT),
   DEMO_DAEMON_LOG_DIR: z.string().default(DAEMON_LOG_DIR_DEFAULT),
+  DEMO_DAEMON_MAX_TASKS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(64)
+    .default(DAEMON_MAX_TASKS_DEFAULT),
 });
 
 export type DaemonEnv = z.infer<typeof daemonEnvSchema>;
@@ -29,4 +36,5 @@ export interface DaemonConfig {
   healthPort: number;
   logLevel: DaemonEnv["DEMO_DAEMON_LOG_LEVEL"];
   logDir: string;
+  maxTasks: number; // 同时执行的 task 上限
 }

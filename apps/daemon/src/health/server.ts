@@ -21,6 +21,15 @@ export interface HealthServerDeps {
   logger: Logger;
   getState: () => DaemonRuntimeState;
   shutdown: (reason: string) => void;
+  // 阶段 5：task 路由处理器，返回 true 表示已处理（handler 跳过默认路由）。
+  // 依赖注入：health 基础设施不反向依赖 task 模块。
+  routeTask?: (
+    req: IncomingMessage,
+    res: ServerResponse,
+    url: URL,
+  ) => boolean;
+  // 阶段 5：活跃 task 数（/health 的 activeTaskCount 用）。
+  getActiveTaskCount?: () => number;
 }
 
 export async function startHealthServer(
@@ -53,6 +62,8 @@ function createHandler(deps: HealthServerDeps) {
   return (req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url ?? "/", "http://localhost");
     try {
+      // 先试 task 路由（注入的处理器决定是否接管）。
+      if (deps.routeTask?.(req, res, url)) return;
       if (req.method === "GET" && url.pathname === "/health") {
         return healthHandler(res, deps);
       }
@@ -82,7 +93,7 @@ function healthHandler(res: ServerResponse, deps: HealthServerDeps) {
     healthPort: deps.port,
     logDir: state.logDir,
     agents: state.agents,
-    activeTaskCount: 0,
+    activeTaskCount: deps.getActiveTaskCount?.() ?? 0,
   };
   res.setHeader("content-type", "application/json");
   res.end(JSON.stringify(body));

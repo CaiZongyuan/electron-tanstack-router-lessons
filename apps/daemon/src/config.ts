@@ -15,5 +15,6 @@ export function loadConfig(): DaemonConfig {
     // 空字符串表示用默认路径。放在 daemon 而非 core 是因为
     // homedir() 是 Node API，core 不能调。
     logDir: env.DEMO_DAEMON_LOG_DIR || join(homedir(), ".demo", "daemon"),
+    maxTasks: env.DEMO_DAEMON_MAX_TASKS,
   };
 }

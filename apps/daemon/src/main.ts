@@ -2,6 +2,10 @@ import type { Server } from "node:http";
 import { loadConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { probeClaude } from "./agent/probe.ts";
+import { ClaudeBackend } from "./agent/claude.ts";
+import { TaskStore } from "./task/store.ts";
+import { TaskRunner } from "./task/runner.ts";
+import { handleTaskRoute } from "./task/router.ts";
 import {
   startHealthServer,
   type DaemonRuntimeState,
@@ -30,6 +34,12 @@ const runtime: DaemonRuntimeState = {
   agents: [], // probeClaude 后填充
 };
 
+// agent 后端 + task 运行时。即使 claude 未装也建（task 会自行 fail，
+// /health 的 agents 字段负责提示安装），保持 task API 始终可用。
+const backend = new ClaudeBackend({ logger });
+const taskStore = new TaskStore({ maxConcurrent: config.maxTasks, logger });
+const taskRunner = new TaskRunner({ backend, store: taskStore, logger });
+
 let shuttingDown = false;
 function shutdown(reason: string): void {
   if (shuttingDown) return;
@@ -49,6 +59,9 @@ try {
     logger,
     getState: () => runtime,
     shutdown,
+    routeTask: (req, res, url) =>
+      handleTaskRoute(req, res, url, { store: taskStore, runner: taskRunner, logger }),
+    getActiveTaskCount: () => taskStore.runningCount(),
   });
 } catch (err) {
   const e = err as NodeJS.ErrnoException;
@@ -86,6 +99,9 @@ const tick = setInterval(() => {
 
 controller.signal.addEventListener("abort", () => {
   clearInterval(tick);
+  // 取消所有未结束 task——abort 同步触发 backend 的 killProcessTree，
+  // 进程树在 process.exit 前就被清掉，不残留孤儿 claude。
+  taskStore.cancelAll();
   healthServer?.close();
   logger.info("bye");
   setTimeout(() => process.exit(0), 50);
