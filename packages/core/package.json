@@ -5,10 +5,14 @@
   "type": "module",
   "exports": {
     "./platform/*": "./platform/*.ts",
-    "./platform/context": "./platform/context.tsx"
+    "./platform/context": "./platform/context.tsx",
+    "./daemon/*": "./daemon/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
   },
   "peerDependencies": {
     "react": "catalog:",

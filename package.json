@@ -6,6 +6,7 @@
   "scripts": {
     "dev:web": "turbo dev --filter=@demo/web",
     "dev:desktop": "turbo dev --filter=@demo/desktop",
+    "dev:daemon": "turbo dev --filter=@demo/daemon",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "ui:add": "cd packages/ui && npx shadcn@latest add"
