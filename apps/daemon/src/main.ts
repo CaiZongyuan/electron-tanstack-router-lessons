@@ -1,6 +1,7 @@
 import type { Server } from "node:http";
 import { loadConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
+import { probeClaude } from "./agent/probe.ts";
 import {
   startHealthServer,
   type DaemonRuntimeState,
@@ -26,6 +27,7 @@ const runtime: DaemonRuntimeState = {
   startedAt: Date.now(),
   ready: false,
   logDir: config.logDir,
+  agents: [], // probeClaude 后填充
 };
 
 let shuttingDown = false;
@@ -61,7 +63,18 @@ try {
   process.exit(1);
 }
 
-// preflight 完成（本阶段很轻，阶段 4 之后这里会加 probeClaude）。
+// preflight：探测 claude。这一步有延迟（spawn 一次 CLI），所以放在
+// health server 起来之后、ready 之前——liveness 已就绪，readiness 等探测完。
+const claude = await probeClaude();
+if (claude.available) {
+  runtime.agents = ["claude"];
+  logger.info({ version: claude.version }, "claude detected");
+} else {
+  logger.warn(
+    { err: claude.error },
+    "claude not available; agent tasks will fail",
+  );
+}
 runtime.ready = true;
 logger.info("daemon ready");
 

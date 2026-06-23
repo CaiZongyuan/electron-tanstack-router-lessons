@@ -12,7 +12,8 @@ export interface DaemonRuntimeState {
   startedAt: number;
   ready: boolean;
   logDir: string;
-  // 后续阶段填充：agents、activeTaskCount
+  agents: string[]; // 阶段 4：探测到的可用 agent（如 ["claude"]）
+  // 后续阶段填充：activeTaskCount
 }
 
 export interface HealthServerDeps {
@@ -80,7 +81,7 @@ function healthHandler(res: ServerResponse, deps: HealthServerDeps) {
     uptimeMs: Date.now() - state.startedAt,
     healthPort: deps.port,
     logDir: state.logDir,
-    agents: [],
+    agents: state.agents,
     activeTaskCount: 0,
   };
   res.setHeader("content-type", "application/json");

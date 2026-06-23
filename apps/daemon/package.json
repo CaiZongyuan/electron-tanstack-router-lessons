@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
+    "agent:cli": "tsx src/agent/cli.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
