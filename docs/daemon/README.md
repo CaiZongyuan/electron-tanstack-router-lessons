@@ -20,8 +20,9 @@
 | `05-claude-backend.md` | 阶段 4：`Backend` 接口 + `ClaudeBackend`、spawn + stdin + stream-json 解析、abort 杀进程树 |
 | `06-task-api.md` | 阶段 5：`POST /task/run` + `GET /task/:id/events` NDJSON 流 + `DELETE` 取消；store append-only 回放、runner 状态机、并发上限 |
 | `07-shell-integration.md` | 阶段 6：`DaemonClient` 抽象 + desktop IPC 桥接 + web 直 fetch + 共享 chat UI；daemon-manager 状态机、流式 IPC、CORS |
+| `08-打包与引导安装.md` | 阶段 7：tsup 打 daemon 单文件 + electron-builder extraResources + prod spawn（ELECTRON_RUN_AS_NODE）+ claude 引导安装 |
 
-阶段 7（打包 + 引导安装）及之后随进度生成。
+八阶段已全部完成。
 
 对照 multica 源码阅读：`D:\Projects\src\multica\server\internal\daemon\`、`D:\Projects\src\multica\server\pkg\agent\`、`D:\Projects\src\multica\apps\desktop\src\main\daemon-manager.ts`。
 
@@ -36,5 +37,6 @@
 - Claude backend：`Backend` 接口 + `ClaudeBackend`，spawn `claude`、stdin 写 prompt、stdout 行缓冲解析 stream-json、`AbortSignal` 经 `taskkill /T` 杀进程树；`probeClaude` 探测版本并填充 `health.agents`。
 - Task HTTP API：`POST /task/run` 创建即返回 `task_id`、`GET /task/:id/events` NDJSON 流式（append-only 历史 + live 订阅，回放防丢首包）、`DELETE /task/:id` 经 `AbortController` 即时取消；runner 维护 `pending→running→done/failed/cancelled` 状态机；并发上限 `DEMO_DAEMON_MAX_TASKS`（默认 4）。
 - Shell 集成：`@demo/core` 定义传输无关的 `DaemonClient` 接口；`apps/desktop` 由主进程 `daemon-manager` spawn/管理 daemon 子进程、renderer 经 IPC 调主进程转 HTTP（含流式 task 事件转发 + `unsubscribe` 防泄漏）；`apps/web` 直接浏览器 fetch 同一套 HTTP（health server 已加 CORS）；共享 `chat-view`/`daemon-panel` 只依赖接口，两端同构；`/daemon` 路由挂载，sidebar「运行时」入口。
+- 打包 + 引导安装：daemon tsup 打成单文件 `main.cjs`（内联依赖）；desktop electron-builder `extraResources` 把 daemon 拷进安装包，prod 用 `ELECTRON_RUN_AS_NODE` 跑；`claude-installer` 检测 + npm global PATH 探测 + 缺失引导安装 banner。
 
-下一步进入阶段 7 · 打包 + 引导安装：electron-builder extraResource 把 daemon 产物 bundle 进 desktop 安装包；首次启动检测 `claude --version`，缺失引导 `npm install -g @anthropic-ai/claude-code`。
+🎉 八阶段全部完成——从「为什么独立进程」到「可交付的安装包」。后续可扩展：多 agent（codex 等）、会话 resume（`--resume`）、代码块语法高亮、auto-update。
