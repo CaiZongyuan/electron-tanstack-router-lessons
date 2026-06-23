@@ -30,12 +30,13 @@
 
 ## 当前进度
 
-当前已完成到阶段 5：
+当前已完成到阶段 6：
 
-- monorepo 已建立
+- monorepo 已建立（pnpm + turbo workspace）
 - `@demo/ui` 与 `@demo/views` 已抽出
 - `apps/desktop` 已能复用共享页面
 - `@demo/core` 已建立最小平台能力接口
 - “打开外链”已贯通 web 与 desktop 两端
+- multica 风格主界面骨架已复刻（共享 `@demo/views`，web/desktop 同构）
 
-下一步进入阶段 6：复刻 multica 风格的主 UI 外壳与页面结构。
+下一步进入阶段 7：Electron 打包与工程收尾（`08-打包与收尾.md`）。
