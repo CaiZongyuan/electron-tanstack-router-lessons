@@ -19,7 +19,7 @@ import { WorkspaceAvatar } from '../workspace/workspace-avatar'
 
 type NavItem = {
   label: string
-  to: '/'
+  to: '/' | '/daemon'
   icon: typeof Inbox
   badge?: string
 }
@@ -36,7 +36,7 @@ const workspaceNav: NavItem[] = [
 ]
 
 const configureNav: NavItem[] = [
-  { label: '运行时', to: '/', icon: Monitor },
+  { label: '运行时', to: '/daemon', icon: Monitor },
   { label: '设置', to: '/', icon: Settings },
 ]
 

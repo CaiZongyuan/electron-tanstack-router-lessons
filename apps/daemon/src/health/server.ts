@@ -58,8 +58,23 @@ export async function startHealthServer(
   return server;
 }
 
+// 给响应打上 CORS header。daemon 是本地工具，web renderer（localhost）直连
+// daemon（127.0.0.1:19514）跨域，没有这些 header 浏览器会拦截。放开来源即可。
+function setCorsHeaders(res: ServerResponse): void {
+  res.setHeader("access-control-allow-origin", "*");
+  res.setHeader("access-control-allow-methods", "GET, POST, DELETE, OPTIONS");
+  res.setHeader("access-control-allow-headers", "content-type");
+}
+
 function createHandler(deps: HealthServerDeps) {
   return (req: IncomingMessage, res: ServerResponse) => {
+    setCorsHeaders(res);
+    // OPTIONS 预检直接回 204，不走业务路由。
+    if (req.method === "OPTIONS") {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
     const url = new URL(req.url ?? "/", "http://localhost");
     try {
       // 先试 task 路由（注入的处理器决定是否接管）。

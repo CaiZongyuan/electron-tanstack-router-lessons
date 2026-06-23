@@ -6,7 +6,8 @@
   "exports": {
     "./layout/*": "./layout/*.tsx",
     "./home/*": "./home/*.tsx",
-    "./workspace/*": "./workspace/*.tsx"
+    "./workspace/*": "./workspace/*.tsx",
+    "./daemon/*": "./daemon/*.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

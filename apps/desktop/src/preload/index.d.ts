@@ -6,6 +6,30 @@ declare global {
     desktopAPI: {
       platform: 'desktop'
       openExternal(url: string): Promise<void>
+      // daemon（main 转成对 daemon 的 HTTP）
+      daemonStart(): Promise<void>
+      daemonStop(): Promise<void>
+      daemonGetStatus(): Promise<import('@demo/core/daemon/client').DaemonStatus>
+      daemonGetHealth(): Promise<import('@demo/core/daemon/client').DaemonHealth | null>
+      daemonRunTask(
+        req: import('@demo/core/daemon/task').TaskRunRequest,
+      ): Promise<{ task_id: string }>
+      daemonCancelTask(taskId: string): Promise<void>
+      daemonSubscribeEvents(taskId: string): Promise<void>
+      daemonUnsubscribeEvents(taskId: string): Promise<void>
+      onDaemonStatus(
+        cb: (
+          status: import('@demo/core/daemon/client').DaemonStatus,
+        ) => void,
+      ): () => void
+      onDaemonTaskEvent(
+        cb: (
+          payload: {
+            taskId: string
+            event: import('@demo/core/daemon/task').TaskEvent
+          },
+        ) => void,
+      ): () => void
     }
   }
 }
