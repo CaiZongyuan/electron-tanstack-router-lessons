@@ -92,10 +92,17 @@ export class ClaudeBackend implements Backend {
       child.stdin?.write(buildClaudeInput(prompt));
       child.stdin?.end();
 
+      // 转发流式消息，并跟踪是否收到终结的 result 帧。claude 因 API 过载
+      // 等原因 exit 0 却没产出 result 时，靠这个判断「异常终止」并补一条 error，
+      // 不让调用方干等无反馈。
+      let sawResult = false;
       if (child.stdout) {
-        yield* mapClaudeFramesToMessages(
+        for await (const msg of mapClaudeFramesToMessages(
           parseStreamJson<ClaudeFrame>(child.stdout, this.logger),
-        );
+        )) {
+          if (msg.type === "result") sawResult = true;
+          yield msg;
+        }
       }
 
       // 等子进程退出。ENOENT（claude 没装）走 'error' 而非 'exit'。
@@ -105,10 +112,19 @@ export class ClaudeBackend implements Backend {
           type: "error",
           text: `无法启动 claude：${error.message}（确认 claude 在 PATH 且 probe 通过）`,
         };
-      } else if (code !== 0 && !opts.signal?.aborted) {
+      } else if (opts.signal?.aborted) {
+        // 主动取消：不报错
+      } else if (code !== 0) {
         yield {
           type: "error",
           text: `claude 异常退出 code=${code}${stderrTail ? `\n${stderrTail}` : ""}`,
+        };
+      } else if (!sawResult) {
+        // exit 0 但没产出 result——通常是 API 错误重试耗尽后静默收场。
+        // 上面的 system/log 帧已带有重试信息，这里补一条总结。
+        yield {
+          type: "error",
+          text: `claude 退出但未产出结果（code=0，疑似 API 错误重试耗尽）${stderrTail ? `\n${stderrTail}` : ""}`,
         };
       }
     } finally {
@@ -147,7 +163,19 @@ async function* mapClaudeFramesToMessages(
 function* toMessages(frame: ClaudeFrame): Generator<Message> {
   switch (frame.type) {
     case "system":
-      if (frame.session_id) yield { type: "system", sessionId: frame.session_id };
+      // init 取 session_id；api_retry 等子事件透传成 log，
+      // 否则 claude 在 API 过载重试时调用方完全看不到状态（看起来像卡死）。
+      if (frame.subtype === "init") {
+        if (frame.session_id) yield { type: "system", sessionId: frame.session_id };
+      } else if (frame.subtype === "api_retry") {
+        yield {
+          type: "log",
+          level: "warn",
+          text: `api 重试 #${frame.attempt ?? "?"}（${frame.error_status ?? ""} ${frame.error ?? ""}）`,
+        };
+      } else if (frame.subtype) {
+        yield { type: "log", text: `system: ${frame.subtype}` };
+      }
       return;
     case "result":
       yield {
@@ -228,9 +256,13 @@ interface ClaudeMessage {
 
 interface ClaudeFrame {
   type: string;
+  subtype?: string; // system 帧的子类型：init / api_retry / ...
   session_id?: string;
   result?: string;
   is_error?: boolean;
+  attempt?: number; // api_retry 的重试次数
+  error_status?: number; // api_retry 的 HTTP 状态码
+  error?: string; // api_retry 的错误描述
   log?: { level?: string; message?: string };
   message?: ClaudeMessage;
 }

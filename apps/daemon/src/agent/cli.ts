@@ -19,4 +19,6 @@ for await (const msg of backend.execute(prompt)) {
   else if (msg.type === "result")
     process.stdout.write(`[result] ${msg.text} (error=${msg.isError})\n`);
   else if (msg.type === "error") process.stdout.write(`[error] ${msg.text}\n`);
+  else if (msg.type === "log")
+    process.stdout.write(`[log:${msg.level ?? "?"}] ${msg.text}\n`);
 }
