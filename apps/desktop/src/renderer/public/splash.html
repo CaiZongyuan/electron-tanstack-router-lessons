@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self'; img-src 'self' data:;"
+    />
+    <title>启动中</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: transparent; /* 窗口底色 #101314 由主进程给，这里只画 logo 卡片 */
+        overflow: hidden;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas class="logo-canvas" width="340" height="340"></canvas>
+    <!-- 相对路径：dev 走 vite、prod 走 file:// 都能解析；音画同步以 ended 为准 -->
+    <audio id="startup-audio" src="audio/startup.mp3" autoplay></audio>
+    <script src="splash.js"></script>
+  </body>
+</html>

@@ -8,6 +8,10 @@ const api = {
   openExternal(url: string) {
     return ipcRenderer.invoke('platform:open-external', url)
   },
+  // 启动动画：splash 窗口在音效播完时回调主进程，主进程据此显示主窗口并销毁 splash。
+  splashDone() {
+    ipcRenderer.send('splash:done')
+  },
   // daemon：invoke 走请求-响应；on 走事件订阅。main 把它们转成对 daemon 的 HTTP。
   daemonStart(): Promise<void> {
     return ipcRenderer.invoke('daemon:start')

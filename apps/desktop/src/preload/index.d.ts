@@ -6,6 +6,7 @@ declare global {
     desktopAPI: {
       platform: 'desktop'
       openExternal(url: string): Promise<void>
+      splashDone(): void
       // daemon（main 转成对 daemon 的 HTTP）
       daemonStart(): Promise<void>
       daemonStop(): Promise<void>
