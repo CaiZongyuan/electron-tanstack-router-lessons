@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { platform } from "node:os";
 import { promisify } from "node:util";
 
 const execFileP = promisify(execFile);
@@ -22,6 +23,10 @@ export async function probeClaude(binary = "claude"): Promise<ProbeResult> {
     const { stdout } = await execFileP(binary, ["--version"], {
       windowsHide: true,
       timeout: 5000,
+      // Windows 上 npm 全局装的是 claude.cmd：execFile 不带 shell 只认 .exe，
+      // 解析不到 .cmd 会 ENOENT；开 shell 走 cmd.exe，靠 PATHEXT 找到 .cmd。
+      // Mac/Linux 上 claude 是真可执行，不开 shell 以免多余的 sh 开销与注入面。
+      shell: platform() === "win32",
     });
     const version = extractVersion(stdout);
     if (!version) {

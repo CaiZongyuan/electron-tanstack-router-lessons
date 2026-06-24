@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { platform } from "node:os";
 import type { Logger } from "pino";
 import { killProcessTree } from "../platform/windows.ts";
 import { parseStreamJson } from "./stream-json.ts";
@@ -65,6 +66,19 @@ export class ClaudeBackend implements Backend {
       stdio: ["pipe", "pipe", "pipe"],
       // Windows 下尽量不弹黑窗；CREATE_NO_WINDOW 的「孙子弹窗」问题留阶段 7。
       windowsHide: true,
+      // Windows 上 claude 是 npm 全局装的 claude.cmd：spawn 不带 shell 只认
+      // .exe 会 ENOENT；开 shell 走 cmd.exe 才能用 PATHEXT 解析到 .cmd。
+      // prompt 走 stdin 不进命令行，开 shell 不引入注入面。
+      shell: platform() === "win32",
+    });
+
+    // spawn 失败（如 ENOENT）的 'error' 在 spawn 后异步触发。原来由
+    // waitForExit 在很后面才挂监听，错误可能在 stdin 写入 / stdout 迭代期间
+    // 先到，变成未捕获事件把整个 daemon 拖崩。这里立刻捕获，留待 waitForExit
+    // 采纳，确保 spawn 失败只产出一条 error message 而不崩进程。
+    let spawnError: Error | null = null;
+    child.once("error", (err) => {
+      spawnError = err;
     });
 
     let stderrTail = "";
@@ -96,7 +110,8 @@ export class ClaudeBackend implements Backend {
       // 等原因 exit 0 却没产出 result 时，靠这个判断「异常终止」并补一条 error，
       // 不让调用方干等无反馈。
       let sawResult = false;
-      if (child.stdout) {
+      // spawn 已失败（spawnError）时直接跳过 stdout 迭代，交给 waitForExit 报错。
+      if (!spawnError && child.stdout) {
         for await (const msg of mapClaudeFramesToMessages(
           parseStreamJson<ClaudeFrame>(child.stdout, this.logger),
         )) {
@@ -106,7 +121,7 @@ export class ClaudeBackend implements Backend {
       }
 
       // 等子进程退出。ENOENT（claude 没装）走 'error' 而非 'exit'。
-      const { code, error } = await waitForExit(child);
+      const { code, error } = await waitForExit(child, spawnError);
       if (error) {
         yield {
           type: "error",
@@ -136,6 +151,9 @@ export class ClaudeBackend implements Backend {
 // 等子进程退出，返回 exit code 与可能的 spawn error（ENOENT 等）。
 function waitForExit(
   child: ChildProcess,
+  // spawn 阶段已捕获的错误（spawnError）：直接采纳，避免重复监听一个
+  // 已经触发过、once 消费掉的事件而永远等不到。
+  capturedError: Error | null = null,
 ): Promise<{ code: number | null; error: Error | null }> {
   return new Promise((resolve) => {
     let done = false;
@@ -144,6 +162,10 @@ function waitForExit(
       done = true;
       resolve({ code, error });
     };
+    if (capturedError) {
+      finish(null, capturedError);
+      return;
+    }
     child.once("exit", (code) => finish(code ?? null, null));
     child.once("error", (err) => finish(null, err));
   });
