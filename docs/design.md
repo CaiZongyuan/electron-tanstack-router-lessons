@@ -1,277 +1,388 @@
-# UI 设计规范（design.md）
+# UI 设计规范
 
-> 本规范参照 multica 的 `docs/design.md` 提炼，适配到本项目（学习项目、shadcn 风格、Tailwind v4）。
-> 所有 UI 开发以此为准。token 在阶段 2 落地到 `packages/ui/styles/tokens.css`；在那之前，先用语义类名约定。
+> 本规范以 `resource/ref.png` 的 desktop 版本为主参考，目标是复刻 Marvis / multica 风格的本地 agent 工作台。所有 web 与 Electron renderer 的 UI 都以本文为准。
 
 ---
 
-## 1. 设计哲学
+## 1. 产品气质
+
+这是一个面向桌面端的本地 agent 应用，不是营销页、内容站或传统后台。界面应当像一个安静的工作台：左侧管理资源与会话，中间承载“把任务交给助手”的核心流程。
 
 三条核心原则：
 
-1. **克制即高级。** 默认做减法。每个元素必须有存在的理由——多余的分割线、装饰性图标、「以防万一」的提示，都是噪音。留白本身就是设计。
-2. **层次靠灰度，颜色是信号。** 界面主体是中性色。颜色只在传递语义时出现（状态、品牌、错误）。两个区域争抢注意力时，让一个退后，而不是都加色。
-3. **一致性大于个性。** 同类交互必须有相同视觉反馈。sidebar、dropdown、table row 里的 hover 应该「感觉一样」，靠 token 而非硬编码实现。
+1. **低对比、强秩序**：主界面接近白色，层次主要靠轻微灰度、留白和圆角建立。不要用大面积色块制造层级。
+2. **中心任务优先**：首屏视觉重心是助手身份、任务输入框和推荐任务。侧边栏永远服务于导航，不抢主区注意力。
+3. **桌面应用感**：窗口边界、标题栏空间、侧边栏固定、内容居中，都要符合 desktop 壳子的使用预期。不要做移动优先的落地页布局。
 
 ---
 
-## 2. 颜色体系
+## 2. 整体布局
 
-基于 CSS 变量（OKLCh 色彩空间）。**禁止硬编码 Tailwind 色值**（如 `text-gray-500`、`bg-blue-600`），一律用语义 token。
+### 2.1 Desktop 框架
 
-### 2.1 中性色阶梯（界面约 90% 面积）
+参考图结构：
 
-| 角色 | Token | 用途 |
-|---|---|---|
-| 页面底色 | `background` | 页面背景 |
-| 卡片/浮层 | `card` / `popover` | 容器表面 |
-| 次级表面 | `muted` / `secondary` | hover 背景、标签底色 |
-| 边框 | `border` | 分隔线、输入框边框 |
-| 输入框边框 | `input` | 比 border 略重 |
-| 主要文字 | `foreground` | 标题、正文 |
-| 次要文字 | `muted-foreground` | 描述、元数据、placeholder |
-| 最强调 | `primary` | 按钮文字（反色）、关键标签 |
+```text
+┌───────────────────────────────────────────────┐
+│  sidebar     │              main              │
+│  240px       │      centered workspace         │
+│              │                                │
+└───────────────────────────────────────────────┘
+```
 
-**规则：** 同屏文字颜色最多 3 个层级（`foreground` / `muted-foreground` / 某语义色）。超过 3 级说明层次设计有问题。
+规则：
 
-### 2.2 语义色（只传递含义，不做装饰）
+- Electron 窗口主体使用 `bg-background`，外层可保留窗口圆角与系统标题栏空间。
+- 左侧 sidebar 固定在窗口左边，宽度约 `w-60` 到 `w-64`，背景使用比主区略深的浅灰 token。
+- 主内容区不贴边，使用居中容器，推荐宽度 `max-w-5xl`；输入面板推荐 `max-w-4xl`。
+- 主区顶部留足呼吸感，desktop 首屏建议 `pt-28` 左右；web 可按浏览器高度收敛。
+- 不使用全屏卡片套卡片。页面区块是开放式布局，只有输入框、推荐项、弹层等具体对象可以是卡片。
 
-| Token | 含义 | 场景 |
-|---|---|---|
-| `brand` | 品牌 | Logo、品牌按钮、少量强调 |
-| `destructive` | 危险/错误 | 删除按钮、校验错误、危险操作 |
-| `success` | 成功 | 状态标签（完成、已解决） |
-| `warning` | 警告 | 注意状态、到期提醒 |
-| `info` | 信息 | 提示、链接、次要标记 |
+### 2.2 首屏信息层级
 
-**规则：** 语义色主要用于小面积元素（badge、icon、border）。大面积着色用该色 10%–20% 透明度变体（如 `bg-destructive/10`）。同屏语义色不超过 2–3 种。
+首屏从上到下固定为：
 
-### 2.3 暗色模式
+1. 助手身份区：头像 / 产品名 / 在线说明。
+2. 大任务输入面板：多行任务描述、附件入口、发送按钮。
+3. 推荐分类标签：推荐、办公学习、电脑设置等。
+4. 推荐任务网格：2 到 3 列卡片。
 
-暗色模式是**独立设计的一套配色**，不是简单反转：
-
-- 背景用深灰（如 `oklch(0.18 ...)`），不是纯黑——纯黑在 LCD 上刺眼。
-- 边框用白色低透明度（如 `oklch(1 0 0 / 10%)`），比 light 更微妙。
-- 语义色在 dark 下适当提亮以保证对比度。
-- **所有 UI 变更必须双模验证。**
+不要在首屏加入宣传文案、功能介绍卡、统计图或无关 banner。
 
 ---
 
-## 3. 字体规范
+## 3. 颜色系统
 
-### 3.1 字体家族
+### 3.1 总体观感
 
-| 角色 | 变量 | 用途 |
-|---|---|---|
-| 正文/UI | `--font-sans`（Inter） | 默认字体；CJK 自动 fallback 到系统字体（PingFang SC / Microsoft YaHei / Noto Sans CJK SC） |
-| 代码/数据 | `--font-mono`（Geist Mono） | 代码块、ID、时间戳、等宽数据 |
-| 标题 | `--font-heading`（= sans） | 页面标题、区块标题 |
+参考图是极浅色桌面 UI：
 
-### 3.2 字号纪律（整个项目只用 3 个核心 + 1 个特殊）
+- 主区：近白色 `bg-background`。
+- sidebar：轻微灰底，使用 `bg-muted` / sidebar token。
+- 输入面板和推荐卡：白色或接近白色 `bg-card`，配非常浅的 `border-border`。
+- 文字：黑灰层级，不使用彩色文字做装饰。
+- 彩色只用于小图标、状态点、文件类型或明确语义。
 
-| Class | 大小 | 角色 |
-|---|---|---|
-| `text-base` (16px) | 正文 | 页面标题、主要内容 |
-| `text-sm` (14px) | 默认 | 菜单项、按钮、表单、列表项 |
-| `text-xs` (12px) | 辅助 | badge、时间戳、次要信息 |
-| `text-[0.8rem]` | 过渡 | 仅限 shadcn `size="sm"` 按钮 |
+### 3.2 必须使用语义 token
 
-**禁止：** `text-lg`/`xl`/`2xl`（信息密度型工具不需要大字）；任意像素值如 `text-[11px]`；同一区块混用超过 2 个字号。
+禁止硬编码 Tailwind 色值，例如 `text-gray-500`、`bg-blue-600`、`border-zinc-200`。统一使用：
 
-### 3.3 字重（只用两个）
-
-| 字重 | 用途 |
+| 场景 | Token / class |
 |---|---|
-| `font-normal` (400) | 正文、描述 |
-| `font-medium` (500) | 标签、按钮、导航项、标题、选中态 |
+| 页面背景 | `bg-background` |
+| 主文字 | `text-foreground` |
+| 次级文字 | `text-muted-foreground` |
+| 卡片 / 输入面板 | `bg-card text-card-foreground` |
+| 浅灰区域 / hover | `bg-muted` / `hover:bg-muted` |
+| 边框 | `border-border` |
+| 输入边框 | `border-input` |
+| 主操作 | `bg-primary text-primary-foreground` |
+| 危险操作 | `text-destructive` / `bg-destructive` |
+| 成功 / 运行中 | `text-success` / `bg-success` |
+| 警告 | `text-warning` / `bg-warning` |
+| 信息 | `text-info` / `bg-info` |
 
-**禁止** `font-bold` / `font-semibold`——加粗破坏轻感。需要更强强调，用更大字号或 `foreground` 色值。
+### 3.3 色彩比例
+
+- 中性色占 90% 以上。
+- 语义色只用于小面积元素：状态点、文件类型图标、badge、错误文字。
+- 一个视图内同时出现的强语义色不超过 2 种。
+- 不使用渐变背景、彩色阴影、品牌色大面积铺底。
+
+### 3.4 Dark 模式
+
+dark 模式是独立适配，不是简单反色：
+
+- 背景用深灰 token，不用纯黑。
+- 卡片、sidebar、popover 之间保持轻微层级差。
+- 边框使用低透明度浅色，不要形成高亮网格。
+- 所有 UI 变更必须同时检查 light 和 dark；参考图主要定义 light 观感，dark 仍遵守同样的信息层级。
 
 ---
 
-## 4. 间距体系（4px 基础网格）
+## 4. 字体与文本
 
-间距传递信息——它告诉用户「什么属于什么」。
+### 4.1 字号
 
-| 间距 | Tailwind | 含义 |
-|---|---|---|
-| 4px | `gap-1` / `p-1` | 紧密关联——icon 与文字、label 与值 |
-| 6px | `gap-1.5` / `p-1.5` | 组件内部——按钮内 padding、列表项间距 |
-| 8px | `gap-2` / `p-2` | 同组不同项——表单字段间、列表项间 |
-| 12px | `gap-3` / `p-3` | 小节内——卡片内 padding |
-| 16px | `gap-4` / `p-4` | 组间分隔——不同区块之间 |
-| 24px | `gap-6` / `p-6` | 大节分隔——页面主要区域间 |
+本项目只使用三档字号：
 
-**分隔两个区域的手段（按优先级，用最轻的）：**
-
-1. **仅间距**——增大间距（首选）
-2. **单条分割线**——`border-border`
-3. **背景色变化**——一个区域用 `bg-muted` / `bg-card`
-4. **完整卡片**——border + radius + padding（最重）
-
-> 如果需要分割线，往往说明间距不够。分割线是最后手段。
-
----
-
-## 5. 交互状态（一致性的核心）
-
-状态链：`默认 → hover → active/pressed → selected/active → focused → disabled`
-
-### 5.1 Hover（「我注意到你了」，轻微即时）
-
-| 元素 | Hover | Token |
-|---|---|---|
-| 列表项/菜单项 | 背景变浅灰 | `hover:bg-muted` |
-| Ghost 按钮 | 浅灰背景 + 文字变前景 | `hover:bg-muted hover:text-foreground` |
-| 主按钮 | 背景加深 20% | `hover:bg-primary/80` |
-| 文字链接 | 下划线出现 | `hover:underline` |
-| 图标按钮 | 浅灰背景 | `hover:bg-muted` |
-| 危险按钮 | 透明度加深 | `hover:bg-destructive/20` |
-
-**规则：** hover 不改尺寸（无 `scale`）、不加阴影（无 `shadow`）；hover 背景永远比 selected/active 更淡；统一 `transition-colors`，时长用 Tailwind 默认（150ms）。
-
-### 5.2 Active / Selected（「我被选中了」，比 hover 更重）
-
-| 元素 | Active | Token |
-|---|---|---|
-| Sidebar 菜单项 | 背景 + 字重 + 文字加重 | `data-active:bg-sidebar-accent data-active:font-medium` |
-| Tab | 下方指示条 + 文字变前景 + 字重 | `data-[state=active]:text-foreground` |
-| 列表选中行 | 背景加深 | `bg-muted` / `bg-accent` |
-| Toggle（开） | 背景反色 | `data-[state=on]:bg-primary data-[state=on]:text-primary-foreground` |
-
-**关键区分：** Hover = `bg-muted`；Active = `bg-muted` + `font-medium` + `text-foreground`。Active 始终比 hover 多一个维度（字重或颜色）。
-
-### 5.3 Active 不被 Hover 覆盖（最易出 bug 处）
-
-用户 hover 到一个已选中项上时，hover 样式可能盖掉 active，导致选中态「闪回」普通 hover——视觉上像取消了选中。
-
-**原则：Active 状态任何时候都必须保持可辨识——包括被 hover 时。** 三种实现：
-
-- **方式一**：active 用 hover 不涉及的维度（字重 + 颜色），即使 hover 背景叠上也仍可辨识。
-- **方式二**：显式定义 `active + hover` 复合态，确保 hover 不把 active 背景拉回低层级。
-- **方式三**：用 `:not()` 让 hover 只作用于非 active 元素。
-
-**检查方法：** 写完任何带 hover + active 的组件后，手动验证——先点选中，再把鼠标移上去再移开，确认不闪烁、不降级。
-
-### 5.4 Pressed / Focus / Disabled / Error
-
-| 状态 | 实现 |
+| Class | 用途 |
 |---|---|
-| Pressed | `active:not-aria-[haspopup]:translate-y-px`（shadcn button 已全局配置；触发弹层的按钮不加） |
-| Focus | `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50`（用 `focus-visible` 非 `focus`，ring 用 `ring` token 中灰） |
-| Disabled | `disabled:pointer-events-none disabled:opacity-50` |
-| Error/Invalid | `aria-invalid:border-destructive aria-invalid:ring-destructive/20`（只改边框 ring，不改背景） |
+| `text-base` | 产品名、页面主标题、输入框占位主文本 |
+| `text-sm` | 默认 UI 文本、导航项、按钮、卡片标题、正文 |
+| `text-xs` | 分组标题、时间、状态、辅助说明、卡片摘要 |
+
+禁止 `text-lg` / `text-xl` / `text-2xl` 和任意像素字号。参考图里“Marvis”看起来更大，本项目通过头像尺寸、留白、`font-medium` 和位置建立主视觉，不通过放大字号实现。
+
+### 4.2 字重
+
+只使用：
+
+- `font-normal`：正文、说明、未选中导航。
+- `font-medium`：产品名、卡片标题、按钮、选中导航、重要标签。
+
+禁止 `font-semibold` / `font-bold`。需要强调时优先使用 `text-foreground`、位置、留白或图标，而不是加粗。
+
+### 4.3 文案风格
+
+- 导航与按钮用短词：`新建对话`、`自动任务`、`技能广场`。
+- 空状态和占位文字直接说明下一步：`请输入任务，交给我来帮你完成`。
+- 不在界面里解释功能实现、技术栈、快捷键或设计意图。
+- 中文标点使用全角；英文产品名保持原拼写。
 
 ---
 
-## 6. 图标规范
+## 5. 间距与尺寸
 
-- 统一用 **Lucide React**（`lucide-react`）。禁止混用其他库或自制 SVG（除非 Lucide 确实没有）。
-- 图标尺寸与组件尺寸绑定：
+使用 Tailwind 内置 4px scale。禁止任意像素值，除非为了 Electron 标题栏拖拽区域或平台窗口控制必须精确处理。
 
-| 组件尺寸 | 图标 | 示例 |
+| 间距 | Class | 典型场景 |
 |---|---|---|
-| xs（h-6） | `size-3` | 紧凑按钮、badge |
-| sm（h-7） | `size-3.5` | 小按钮、紧凑列表 |
-| default（h-8） | `size-4` | 标准按钮、菜单项、表格操作 |
-| lg（h-9） | `size-4` | 大按钮（图标不必更大） |
+| 4px | `gap-1` | 图标与极短标签 |
+| 6px | `gap-1.5` | 紧凑按钮内部 |
+| 8px | `gap-2` | 导航项、按钮、卡片标题行 |
+| 12px | `gap-3` / `p-3` | 卡片内部、sidebar 分组 |
+| 16px | `gap-4` / `p-4` | 推荐网格、表单组 |
+| 24px | `gap-6` / `p-6` | 首屏大区块 |
+| 32px | `gap-8` | 助手区与输入面板 |
 
-- 独立装饰图标最大 `size-8`。默认继承父元素文字色，弱化用 `text-muted-foreground`。
-- 导航/操作图标 `text-muted-foreground`，hover 跟随文字变 `text-foreground`；状态图标用语义色；active 图标 `text-foreground`。
+具体建议：
 
----
-
-## 7. 圆角规范
-
-基于 `--radius: 0.625rem`（10px）派生：
-
-| Token | 值 | 用途 |
-|---|---|---|
-| `rounded-sm` | 6px | Checkbox、小标签 |
-| `rounded-md` | 8px | 输入框、小按钮、dropdown item |
-| `rounded-lg` | 10px | 标准按钮、卡片、dialog |
-| `rounded-xl` | 14px | 大卡片、sheet |
-| `rounded-full` | 999px | 头像、pill badge |
-
-**禁止**硬编码像素值如 `rounded-[6px]`（除非组件内部响应式计算）。
+- sidebar 内边距：`p-3` 到 `p-4`。
+- sidebar 导航项高度：`h-10` 左右，图标 `size-4`。
+- 搜索框高度：`h-10`，圆角 `rounded-lg`。
+- 主输入面板最小高度：约 `min-h-56`，底部工具区单独成行。
+- 推荐卡片高度保持稳定，使用固定 `min-h` 或统一内容行数，避免网格跳动。
 
 ---
 
-## 8. 动效规范
+## 6. 圆角、边框与阴影
 
-- **快速、克制。** 动效帮助理解变化，不展示技术。淡入淡出优先于滑动。无弹跳（禁 spring/bounce），缓动统一 `ease-out`。
-- 页面切换（路由）**无动效**。
+参考图的形态是柔和圆角 + 轻边框 + 极弱阴影。
 
-| 场景 | 时长 |
+| 元素 | 圆角建议 |
 |---|---|
-| 颜色/透明度变化 | 150ms |
-| 展开/收起（accordion、collapsible） | 200ms |
-| 弹层出入（dialog、dropdown、popover） | 150–200ms |
+| 小按钮、导航项、输入框 | `rounded-md` / `rounded-lg` |
+| 推荐卡片 | `rounded-xl` |
+| 主任务输入面板 | `rounded-2xl` |
+| 头像、状态图标容器 | `rounded-full` 或 `rounded-xl` |
+| Electron 外层窗口 | 由壳子处理，不在内容层重复模拟 |
 
-用 `transition-colors`（首选）/ `transition-opacity` / `transition-transform`，避免滥用 `transition-all`。
+规则：
+
+- 优先使用 `border border-border` 建立边界。
+- 阴影只允许用于主输入面板或浮层，且必须非常轻：`shadow-sm` 级别。普通卡片、导航项不加阴影。
+- 不使用厚重投影、内发光、玻璃拟态大背景。
+- 不在卡片里再放完整卡片。需要分组时用间距或轻边框。
 
 ---
 
-## 9. 组件使用规范
+## 7. Sidebar 规范
+
+### 7.1 结构
+
+sidebar 从上到下：
+
+1. 产品名：`Marvis` 或当前学习项目名。
+2. 搜索框。
+3. 主操作与一级导航：新建对话、自动任务、技能广场。
+4. 本地知识库分组：应用、文档、图库、此电脑。
+5. 对话分组。
+6. 底部用户区与通知入口。
+
+分组标题使用 `text-xs text-muted-foreground font-normal`，不要加粗。
+
+### 7.2 导航项
+
+导航项规则：
+
+- 默认：透明背景，`text-foreground` 或 `text-muted-foreground`。
+- hover：`hover:bg-muted`，不要改变尺寸。
+- active：`bg-muted text-foreground font-medium`。
+- active + hover 时仍保持 active 可识别，不能被 hover 降级。
+- 图标统一 Lucide，`size-4`，颜色继承文本。
+
+新建对话可作为当前高亮项，但视觉重量不能超过主区输入面板。
+
+### 7.3 底部用户区
+
+- 用户头像 `size-6` 或 `size-7`。
+- 用户名 `text-sm`。
+- 通知图标为 ghost icon button。
+- 底部区域不使用独立卡片，只用 sidebar 自身留白承载。
+
+---
+
+## 8. 主工作区规范
+
+### 8.1 助手身份区
+
+助手身份区是主区的视觉锚点：
+
+- 头像推荐 `size-20` 到 `size-24`。
+- 产品名使用 `text-base font-medium text-foreground`。
+- 状态说明使用 `text-sm text-muted-foreground`，可带一个小图标。
+- 整体水平排列，放在输入面板上方，和输入面板左边缘对齐。
+
+### 8.2 任务输入面板
+
+输入面板是首屏最重要对象：
+
+- 容器：`rounded-2xl border border-border bg-card`。
+- 内部：上方为多行输入区，下方为工具栏。
+- 占位文字：`text-base text-muted-foreground`。
+- 附件按钮：`outline` 或 `ghost`，图标加文字。
+- 发送按钮：圆形 icon button，未输入时 disabled，使用 muted 状态；可发送时使用 primary。
+- 输入区不要出现复杂工具栏、模型选择、温度参数等学习项目当前不需要的控件。
+
+### 8.3 推荐任务
+
+推荐任务用于帮助用户开始，不是信息卡片墙。
+
+- 分类标签：横向文本 tab，`text-sm`；active 用 `font-medium text-foreground`，inactive 用 `text-muted-foreground`。
+- 推荐卡：2 到 3 列，`rounded-xl border border-border bg-card p-4`。
+- 卡片标题：`text-sm font-medium`。
+- 摘要：`text-sm` 或 `text-xs text-muted-foreground`，最多 2 行截断。
+- 右下角可放轻量发送箭头，`text-muted-foreground`。
+- 小图标可用语义色或文件类型色，但面积必须小。
+
+---
+
+## 9. 组件规则
 
 ### 9.1 shadcn 优先
 
-新增 UI 需求时：先查 shadcn 是否有 → 有就用（`npx shadcn add <component>`）→ 需要变体用 CVA 扩展 → 确实没有再自建，但必须遵循本规范的 token 与交互状态。
+新增 UI 组件时：
 
-### 9.2 按钮层级（从最强调到最弱）
+1. 先用 `pnpm ui:add <组件>` 从 shadcn 脚手架到 `packages/ui/components/ui/`。
+2. 根据本规范调整 token、尺寸、状态。
+3. shadcn 没有的组件再手写，但必须放在合适包内并复用 token。
 
-| 变体 | 重量 | 场景 |
-|---|---|---|
-| `default`（primary） | 最重 | 页面主操作（**每屏最多 1 个**） |
-| `outline` | 较重 | 次要操作 |
-| `secondary` | 中 | 辅助操作、工具栏 |
-| `ghost` | 轻 | 图标按钮、内联操作 |
-| `destructive` | 较重 | 删除、危险操作 |
-| `link` | 最轻 | 内联文字链接 |
+### 9.2 Button
 
-**规则：** 一个视图 primary 按钮最多 1 个；多个同等重要操作全用 `outline` / `secondary`。
+| 变体 | 场景 |
+|---|---|
+| `default` | 主发送、确认。一个视图最多一个高权重主按钮。 |
+| `outline` | 选择文件、次级确认。 |
+| `secondary` | 工具栏内辅助操作。 |
+| `ghost` | sidebar、图标按钮、卡片内轻操作。 |
+| `destructive` | 删除、停止危险任务。 |
 
-### 9.3 Dropdown / Popover
+按钮不使用 `scale` hover，不使用彩色阴影。icon button 必须有可访问名称。
 
-- 内容宽度 `w-auto`，**禁止**固定宽（`w-52` 会导致换行）。
-- 菜单项 `text-sm`，图标 `size-4`。选中项用 checkmark 或左侧指示条标记，不改背景色。
-- 危险项 `text-destructive`，放最底部，上方分割线隔开。
+### 9.3 Input / Search
 
-### 9.4 表单输入
+- 搜索框使用 `h-10 rounded-lg border-input bg-background`。
+- placeholder 使用 `text-muted-foreground`。
+- focus 使用 `border-ring` 与 `ring-ring/50`。
+- sidebar 搜索框保持低对比，不要做成主操作。
 
-- 输入框 `border-input`，focus 时 `border-ring` + ring。
-- Label `text-sm font-medium`；描述 `text-xs text-muted-foreground`；错误 `text-xs text-destructive`，放输入框正下方。
+### 9.4 Card
 
----
+只用于推荐任务、弹层内对象、可点击资源项。
 
-## 10. 反模式清单（禁止出现）
+- 默认 `border border-border bg-card`。
+- hover 可使用 `hover:bg-muted/50` 或轻微边框变化。
+- 不默认加阴影。
+- 卡片点击区要完整，不要只让标题可点。
 
-| 禁止 | 原因 | 替代 |
-|---|---|---|
-| 硬编码颜色 `text-red-500`、`bg-gray-100` | 破坏主题一致性 | token：`text-destructive`、`bg-muted` |
-| 任意像素 `text-[11px]`、`w-[137px]` | 脱离设计系统 | Tailwind 内置 scale |
-| `font-bold` / `font-semibold` | 过重 | `font-medium` + `text-foreground` |
-| `text-lg` / `xl` / `2xl` | 信息密度工具不需要大字 | `text-base` 已是最大 |
-| `shadow-sm/md/lg` | 拟物风格，与扁平冲突 | `border` 分隔层级 |
-| hover 时 `scale-105` | 突兀 | `hover:bg-muted` |
-| 多色 gradient 背景 | 装饰性，分散注意力 | 纯色 token |
-| Skeleton loading | 与简洁风格不符 | Spinner（`Loader2` + `animate-spin`）或内联 loading 文字 |
-| Toast 做操作确认 | 转瞬即逝易错过 | 内联状态文字（Sonner 仅用于错误/重要提示） |
-| 固定宽 dropdown `w-52` | 换行不可控 | `w-auto` |
-| 纯黑背景 `#000` | LCD 上刺眼 | dark 模式用深灰 `background` token |
+### 9.5 Dropdown / Popover
+
+- 宽度优先 `w-auto` 或内容驱动，不固定 `w-52`。
+- 菜单项 `text-sm`，图标 `size-4`。
+- 危险项放底部，并用 `text-destructive`。
+- 不使用多级复杂菜单，除非确实是桌面文件/设置类场景。
 
 ---
 
-## 11. 提交前检查清单
+## 10. 交互状态
 
-- [ ] 颜色是否都用 token？有无硬编码？
-- [ ] 字号是否只在 `text-xs` / `text-sm` / `text-base`？
-- [ ] 字重是否只用 `font-normal` / `font-medium`？
-- [ ] Hover 是否比 active 更淡？
-- [ ] Active 项被 hover 时是否仍可辨识（不被覆盖）？
-- [ ] 图标尺寸是否匹配组件尺寸？
-- [ ] 间距是否用 Tailwind 内置 scale（无任意值）？
-- [ ] Dark 模式下是否正常？
-- [ ] 有没有可用间距替代的不必要分割线？
-- [ ] Dropdown/Popover 是否 `w-auto`？
-- [ ] 一个视图里 primary 按钮是否不超过 1 个？
+状态强度从轻到重：
+
+```text
+default < hover < active/selected < focus < disabled/error
+```
+
+规则：
+
+- hover 只改变颜色或背景，不改变尺寸、位置、字重。
+- active 必须比 hover 多一个识别维度，例如 `font-medium` 或 `text-foreground`。
+- active 被 hover 时不能看起来像取消选中。
+- pressed 可以有极轻微位移，但触发 dropdown/popover 的按钮不做位移。
+- disabled 使用 `opacity-50 pointer-events-none`。
+- error 只改变边框、ring 或错误文字，不整块染红。
+
+---
+
+## 11. 图标规范
+
+- 图标统一使用 `lucide-react`。
+- 常规 UI 图标 `size-4`。
+- 紧凑按钮图标 `size-3.5`。
+- 大头像或品牌形象可以使用 bitmap / png 资源，不用 Lucide 代替。
+- 图标默认继承文字颜色；辅助图标用 `text-muted-foreground`。
+- 不手写 SVG 图标，除非 Lucide 没有且该图标是产品关键资产。
+
+---
+
+## 12. 动效规范
+
+动效只用于反馈，不用于装饰。
+
+- 颜色变化：`transition-colors`，150ms。
+- 弹层：150ms 到 200ms。
+- 页面路由切换：默认无动效。
+- loading：优先用 `Loader2 animate-spin` 或按钮 disabled 状态。
+
+禁止：
+
+- hover `scale-105`。
+- spring / bounce。
+- 大面积背景动画。
+- 卡片浮起式阴影动画。
+
+---
+
+## 13. Web 与 Desktop 差异
+
+共享页面必须同构，但外壳可以不同：
+
+- Desktop 可保留窗口圆角、标题栏按钮区域和固定 sidebar。
+- Web 可以用同一套布局，但不模拟 Windows / macOS 窗口控制按钮。
+- 共享视图不能直接调用 Electron、DOM 平台能力或 localhost daemon 地址，必须走 `@demo/core` 的能力接口。
+- 与平台有关的标题栏、窗口拖拽、通知、文件选择等放 app 层实现，再通过 props 或能力接口注入。
+
+---
+
+## 14. 反模式清单
+
+禁止出现：
+
+| 反模式 | 替代 |
+|---|---|
+| 硬编码颜色 `text-gray-500` / `bg-blue-600` | 语义 token |
+| `text-lg` / `text-xl` / 任意字号 | `text-xs` / `text-sm` / `text-base` |
+| `font-bold` / `font-semibold` | `font-medium` |
+| 大面积品牌色背景 | 中性背景 + 小面积语义色 |
+| 渐变、彩色光斑、装饰背景 | 留白和灰度层级 |
+| 普通卡片阴影 | `border-border` |
+| hover 缩放或漂浮 | `hover:bg-muted` |
+| 卡片套卡片 | 间距、分组标题或轻边框 |
+| 首屏营销介绍 | 助手身份 + 任务输入 + 推荐任务 |
+| 在 `@demo/views` 直调平台 API | `@demo/core` 能力接口 |
+
+---
+
+## 15. 提交前检查
+
+- [ ] 首屏是否符合 sidebar + centered workspace 的 Marvis desktop 结构？
+- [ ] 主视觉是否是助手身份、任务输入面板和推荐任务？
+- [ ] 颜色是否全部使用语义 token？
+- [ ] 字号是否只使用 `text-xs` / `text-sm` / `text-base`？
+- [ ] 字重是否只使用 `font-normal` / `font-medium`？
+- [ ] hover 是否比 active 更轻？
+- [ ] active 项 hover 后是否仍可识别？
+- [ ] sidebar 是否低对比且不抢主区注意力？
+- [ ] 推荐卡片是否稳定等高、内容不溢出？
+- [ ] light 与 dark 是否都检查过？
+- [ ] 共享视图是否没有直接调用 Electron、浏览器原生能力或 daemon URL？

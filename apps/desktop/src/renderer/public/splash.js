@@ -268,9 +268,22 @@
 
   // 音画同步：音频自然播完即通知主进程收尾；加载失败也兜底通知，避免 splash 卡死。
   const audio = document.getElementById('startup-audio')
+  const skipButton = document.querySelector('.skip-button')
+  let finished = false
   const finish = () => {
+    if (finished) return
+    finished = true
     window.desktopAPI?.splashDone?.()
   }
+  const skip = () => {
+    if (audio) {
+      audio.pause()
+    }
+    if (finished) return
+    finished = true
+    window.desktopAPI?.splashSkip?.()
+  }
+  skipButton?.addEventListener('click', skip)
   if (audio) {
     audio.addEventListener('ended', finish)
     audio.addEventListener('error', finish)

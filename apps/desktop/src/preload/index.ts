@@ -12,6 +12,9 @@ const api = {
   splashDone() {
     ipcRenderer.send('splash:done')
   },
+  splashSkip() {
+    ipcRenderer.send('splash:skip')
+  },
   // daemon：invoke 走请求-响应；on 走事件订阅。main 把它们转成对 daemon 的 HTTP。
   daemonStart(): Promise<void> {
     return ipcRenderer.invoke('daemon:start')

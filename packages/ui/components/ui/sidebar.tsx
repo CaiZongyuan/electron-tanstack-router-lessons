@@ -50,7 +50,7 @@ function SidebarProvider({
     <SidebarContext.Provider value={value}>
       <div
         data-slot="sidebar-wrapper"
-        className={cn('flex min-h-screen w-full bg-sidebar', className)}
+        className={cn('flex min-h-screen w-full bg-background', className)}
       >
         {children}
       </div>
@@ -69,13 +69,13 @@ function Sidebar({
       data-slot="sidebar"
       data-state={open ? 'expanded' : 'collapsed'}
       className={cn(
-        'border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width,transform] duration-200 ease-out',
+        'bg-sidebar text-sidebar-foreground transition-[width,transform] duration-200 ease-out',
         isMobile
           ? cn(
               'fixed inset-y-0 left-0 z-30 w-64 shadow-none',
               open ? 'translate-x-0' : '-translate-x-full'
             )
-          : cn('hidden md:flex md:flex-col', open ? 'md:w-64' : 'md:w-18'),
+          : cn('hidden md:flex md:flex-col', open ? 'md:w-60' : 'md:w-18'),
         className
       )}
     >
@@ -91,7 +91,7 @@ function SidebarInset({
   return (
     <main
       data-slot="sidebar-inset"
-      className={cn('relative flex min-h-screen min-w-0 flex-1 flex-col bg-background', className)}
+      className={cn('relative flex h-screen min-h-0 min-w-0 flex-1 flex-col bg-background', className)}
     >
       {children}
     </main>
@@ -105,7 +105,7 @@ function SidebarHeader({
   return (
     <div
       data-slot="sidebar-header"
-      className={cn('flex flex-col gap-2 border-b border-sidebar-border p-2', className)}
+      className={cn('flex flex-col gap-3 p-4 pb-3', className)}
       {...props}
     />
   )
@@ -118,7 +118,7 @@ function SidebarContent({
   return (
     <div
       data-slot="sidebar-content"
-      className={cn('flex min-h-0 flex-1 flex-col overflow-y-auto p-2', className)}
+      className={cn('flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-2', className)}
       {...props}
     />
   )
@@ -131,7 +131,7 @@ function SidebarFooter({
   return (
     <div
       data-slot="sidebar-footer"
-      className={cn('border-t border-sidebar-border p-2', className)}
+      className={cn('p-4 pt-2', className)}
       {...props}
     />
   )
@@ -144,7 +144,7 @@ function SidebarGroup({
   return (
     <div
       data-slot="sidebar-group"
-      className={cn('flex flex-col gap-1 py-1', className)}
+      className={cn('flex flex-col gap-1 py-2', className)}
       {...props}
     />
   )
@@ -157,7 +157,7 @@ function SidebarGroupLabel({
   return (
     <div
       data-slot="sidebar-group-label"
-      className={cn('px-2 py-1 text-xs font-medium text-sidebar-foreground/70', className)}
+      className={cn('px-2 py-2 text-xs font-normal text-sidebar-foreground/55', className)}
       {...props}
     />
   )
@@ -224,7 +224,7 @@ function SidebarMenuButton({
   const sidebar = useSidebarSafe()
   const collapsed = sidebar ? !sidebar.open && !sidebar.isMobile : false
   const buttonClassName = cn(
-    'flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium',
+    'flex h-10 w-full items-center gap-2 rounded-lg px-2 text-left text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium',
     collapsed && 'justify-center px-0',
     className
   )
@@ -281,7 +281,7 @@ function SidebarRail({ className }: { className?: string }) {
   return (
     <div
       data-slot="sidebar-rail"
-      className={cn('hidden w-px bg-sidebar-border md:block', className)}
+      className={cn('hidden w-px bg-transparent md:block', className)}
     />
   )
 }

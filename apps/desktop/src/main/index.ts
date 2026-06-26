@@ -109,6 +109,10 @@ app.whenReady().then(() => {
     splashDone = true
     maybeReveal()
   })
+  ipcMain.on('splash:skip', () => {
+    splashDone = true
+    maybeReveal()
+  })
 
   // daemon：注册 IPC（renderer invoke → main 转成 daemon HTTP）+ 状态推送。
   registerDaemonIpc({ manager: daemonManager, getWindow: () => mainWindow })

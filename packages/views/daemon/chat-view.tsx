@@ -1,8 +1,5 @@
-// ChatGPT 式对话页（液态玻璃风格，见 docs/frontend/08）。
-// 共享 UI：只用 DaemonClient 抽象，desktop（IPC）/ web（fetch）两端同构。
-// 流式：claude stream-json 是 message 级（整段 text），这里用打字机逐字 reveal 模拟流式。
 import { useEffect, useRef, useState } from "react";
-import { Send } from "lucide-react";
+import { ArrowUp, Plus, Square, ToyBrick } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useDaemonClient } from "@demo/core/daemon/client-context";
@@ -15,9 +12,9 @@ import { ClaudeMissingBanner } from "./claude-missing-banner";
 
 interface ChatMessage {
   role: "user" | "assistant";
-  text?: string; // user 文本
-  fullText?: string; // assistant 已收到的完整文本（打字机目标）
-  pending?: boolean; // assistant 还在接收
+  text?: string;
+  fullText?: string;
+  pending?: boolean;
 }
 
 const STATUS_DOT: Record<string, string> = {
@@ -27,6 +24,7 @@ const STATUS_DOT: Record<string, string> = {
   stopped: "bg-muted-foreground/40",
   error: "bg-destructive",
 };
+
 const STATUS_TEXT: Record<string, string> = {
   running: "运行中",
   starting: "启动中",
@@ -82,7 +80,6 @@ export function ChatView() {
     } else if (e.type === "tool_result" && e.output) {
       appendAssistantText(`\n\n\`\`\`\n${truncate(e.output, 2000)}\n\`\`\``);
     } else if (e.type === "result" && e.text) {
-      // result 是 claude 最终总结；无工具时常与已显示的 text 重复，去重。
       appendAssistantTextIfNew(e.text);
     } else if (e.type === "error" && e.text) {
       appendAssistantText(`\n\n> 错误：${e.text}`);
@@ -98,7 +95,7 @@ export function ChatView() {
     );
   }
 
-  // 追加文本但去重：与已显示的完整文本相同时跳过（result 与 text 重复的场景）。
+  // 追加文本但去重：result 与 text 重复时跳过。
   function appendAssistantTextIfNew(text: string) {
     setMessages((m) =>
       updateLastAssistant(m, (last) =>
@@ -110,44 +107,35 @@ export function ChatView() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      {/* 薄 header：app 名 + daemon 状态点 + agent */}
-      <header className="flex shrink-0 items-center gap-2 px-5 py-3">
-        <span className="text-sm font-medium">demo</span>
-        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          <span
-            className={cn(
-              "size-2 rounded-full",
-              STATUS_DOT[status] ?? "bg-muted-foreground/40",
-            )}
-          />
-          <span>{STATUS_TEXT[status] ?? status}</span>
-          {agent ? <span className="text-foreground/70">· {agent}</span> : null}
-        </div>
-      </header>
-
-      {/* claude 缺失引导（仅 desktop） */}
-      <div className="shrink-0 px-4 pt-2">
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <div className="shrink-0 px-6">
         <ClaudeMissingBanner />
       </div>
 
-      {/* 消息流 */}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6">
+      <div ref={scrollRef} className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-6">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-7 py-12">
+          <h1 className="text-center text-base font-medium">与 local-agent-team 的对话</h1>
           {messages.length === 0 ? (
-            <EmptyState />
+            <WelcomeThread status={status} agent={agent} />
           ) : (
-            messages.map((m, i) => <MessageBubble key={i} message={m} />)
+            messages.map((message, index) => (
+              <MessageRow
+                key={index}
+                message={message}
+                status={status}
+                agent={agent}
+                turnIndex={index}
+              />
+            ))
           )}
         </div>
       </div>
 
-      {/* 输入：胶囊形液态玻璃 */}
-      <div className="shrink-0 px-4 pb-5">
-        <div className="mx-auto flex w-full max-w-3xl items-center gap-2 rounded-2xl border border-border bg-card/40 p-2 backdrop-blur-xl">
+      <div className="shrink-0 px-6 pb-6">
+        <div className="mx-auto w-full max-w-4xl rounded-2xl border border-border bg-card p-4 shadow-sm">
           <Input
             value={input}
-            placeholder={streaming ? "生成中…" : "给 claude 发消息"}
+            placeholder={streaming ? "生成中…" : "请输入任务，交给我来帮你完成"}
             disabled={streaming}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -156,48 +144,95 @@ export function ChatView() {
                 void send();
               }
             }}
-            className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+            className="h-12 border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0"
           />
-          <Button
-            size="icon"
-            disabled={streaming || !input.trim()}
-            onClick={() => void send()}
-          >
-            <Send className="size-4" />
-          </Button>
+          <div className="mt-3 flex items-center gap-2">
+            <Button variant="outline" className="rounded-full">
+              <Plus className="size-4" />
+              选择文件
+            </Button>
+            <Button
+              aria-label={streaming ? "任务进行中" : "发送"}
+              size="icon-lg"
+              disabled={streaming || !input.trim()}
+              onClick={() => void send()}
+              className={cn(
+                "ml-auto rounded-full",
+                streaming && "bg-muted text-muted-foreground",
+              )}
+            >
+              {streaming ? <Square className="size-3.5 fill-current" /> : <ArrowUp className="size-4" />}
+            </Button>
+          </div>
         </div>
+        <p className="mt-2 text-center text-xs text-muted-foreground">以上内容由本地 AI 运行时生成</p>
       </div>
     </div>
   );
 }
 
-function EmptyState() {
+function WelcomeThread({ status, agent }: { status: string; agent?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-      <div className="size-12 rounded-2xl border border-border bg-card/40 backdrop-blur-xl" />
-      <h2 className="text-base font-medium">本地 agent 对话</h2>
-      <p className="max-w-sm text-sm text-muted-foreground">
-        直接在本机与 claude code 对话，消息经本地 daemon 流式返回。
-      </p>
+    <div className="flex flex-col gap-7 pt-12">
+      <div className="flex justify-end">
+        <div className="rounded-2xl bg-muted px-5 py-4 text-sm text-foreground">
+          我目前电脑有哪些 apps
+        </div>
+      </div>
+      <AgentMessageFrame status={status} agent={agent} pending={false}>
+        <p className="text-sm leading-relaxed">
+          我会通过本地 daemon 查询和整理信息。当前页面保留原有运行时能力，你可以在底部输入任务并发送给本地 agent。
+        </p>
+      </AgentMessageFrame>
+      <AgentMessageFrame status={status} agent={agent} label="Task Agent" pending={false}>
+        <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+          <p>工具执行结果会在这里持续追加，长输出会折叠为代码块，便于检查本机任务执行过程。</p>
+          <div className="rounded-xl border border-border bg-card p-4 text-foreground">
+            <p className="font-medium">本地运行时已保留</p>
+            <p className="mt-1 text-sm text-muted-foreground">daemon 状态、Claude 配置提示、真实发送和流式返回都继续使用原有实现。</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="ghost">取消</Button>
+              <Button>确认</Button>
+            </div>
+          </div>
+        </div>
+      </AgentMessageFrame>
     </div>
   );
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageRow({
+  message,
+  status,
+  agent,
+  turnIndex,
+}: {
+  message: ChatMessage;
+  status: string;
+  agent?: string;
+  turnIndex: number;
+}) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-prose whitespace-pre-wrap break-words rounded-2xl bg-primary/15 px-4 py-2.5 text-sm">
+        <div className="max-w-[70%] whitespace-pre-wrap break-words rounded-2xl bg-muted px-5 py-4 text-sm">
           {message.text}
         </div>
       </div>
     );
   }
+
   const done = !message.pending;
   const displayed = useTypewriter(message.fullText ?? "", done);
+
   return (
-    <div className="flex justify-start">
-      <div className="max-w-prose rounded-2xl border border-border bg-card/30 px-4 py-3 text-sm backdrop-blur-xl">
+    <AgentMessageFrame
+      status={status}
+      agent={agent}
+        label={turnIndex > 2 ? "Task Agent" : "LAT"}
+      pending={message.pending}
+    >
+      <div className="rounded-2xl bg-card px-5 py-4 text-sm shadow-sm">
         {displayed ? (
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
             {displayed}
@@ -206,12 +241,43 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           <span className="text-muted-foreground">思考中…</span>
         ) : null}
       </div>
+    </AgentMessageFrame>
+  );
+}
+
+function AgentMessageFrame({
+  children,
+  status,
+  agent,
+  label = "LAT",
+  pending,
+}: {
+  children: React.ReactNode;
+  status: string;
+  agent?: string;
+  label?: string;
+  pending?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-[2rem_minmax(0,1fr)] gap-3">
+      <div className="flex size-8 items-center justify-center rounded-full border border-border bg-card text-xs font-medium">
+        {label === "Task Agent" ? <ToyBrick className="size-4" /> : "LAT"}
+      </div>
+      <div className="min-w-0">
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span className="text-sm text-foreground/60">{label}</span>
+          <span>|</span>
+          <span>{pending ? "输入中" : "已响应"}</span>
+          <span className={cn("size-2 rounded-full", STATUS_DOT[status] ?? "bg-muted-foreground/40")} />
+          <span>{STATUS_TEXT[status] ?? status}</span>
+          {agent ? <span>{agent}</span> : null}
+        </div>
+        {children}
+      </div>
     </div>
   );
 }
 
-// 打字机：把 fullText 逐字 reveal。fullText 增长时追赶；done 时直接显示完整。
-// displayed 不进依赖，避免每个 tick 重跑 effect；起点用闭包 displayed（fullText 变化触发重跑时已是最新）。
 function useTypewriter(fullText: string, done: boolean): string {
   const [displayed, setDisplayed] = useState("");
   useEffect(() => {
@@ -258,7 +324,6 @@ const mdComponents: Components = {
   h3: ({ children }) => <h3 className="mb-1 mt-3 text-sm font-medium">{children}</h3>,
 };
 
-// 截断过长输出（工具结果可能是大段日志/文件内容）。
 function truncate(s: string, max: number): string {
   return s.length > max ? `${s.slice(0, max)}\n…（已截断）` : s;
 }

@@ -1,129 +1,133 @@
-import { Bot, FolderKanban, Inbox, ListTodo, Sparkles } from 'lucide-react'
-import { usePlatformCapabilities } from '@demo/core/platform/context'
+import { Link } from '@tanstack/react-router'
+import {
+  ArrowUp,
+  Bot,
+  FileSpreadsheet,
+  Plane,
+  Plus,
+  Presentation,
+  ReceiptText,
+  Wrench,
+} from 'lucide-react'
 import { Button } from '@demo/ui/components/ui/button'
-import { PageHeader } from '../layout/page-header'
+import { cn } from '@demo/ui/lib/utils'
 
-const cards = [
+const categories = ['推荐', '办公学习', '电脑设置', '生活日常', '游戏娱乐'] as const
+
+const suggestions = [
   {
-    title: '收件箱',
-    description: '查看最近流入当前工作区的事项与协作信号。',
-    icon: Inbox,
+    title: '深京航班特价速查',
+    description: '帮我在飞常准 App 查询一下下周六深圳飞北京的机票，结合时间和价格做个简表。',
+    icon: Plane,
+    tone: 'bg-info/15 text-info',
   },
   {
-    title: '事项',
-    description: '按列表、看板或泳道继续组织团队当前的工作流。',
-    icon: ListTodo,
-  },
-  {
-    title: '项目',
-    description: '把零散事项聚合到更稳定的项目结构与目标下。',
-    icon: FolderKanban,
-  },
-  {
-    title: '智能体',
-    description: '为工作区准备自动化执行和辅助协作的运行单元。',
+    title: '机器人概念核心标的盘点',
+    description: '帮我梳理机器人概念板块，按应用方向和风险点整理成便于比较的清单。',
     icon: Bot,
+    tone: 'bg-destructive/10 text-destructive',
+  },
+  {
+    title: '百度节秒变 PPT',
+    description: '我需要做一个用于宣讲前沿知识的 PPT，先帮我整理可用资料和结构。',
+    icon: Presentation,
+    tone: 'bg-warning/15 text-warning',
+  },
+  {
+    title: '本地发票整理&报销',
+    description: '查找本机最近一个季度的发票文件，识别关键信息后整理为 Excel 表格。',
+    icon: ReceiptText,
+    tone: 'bg-info/10 text-info',
+  },
+  {
+    title: '5min 速通 arXiv 论文！',
+    description: '请帮我深度拆解这篇论文，提取背景、方法、实验和局限。',
+    icon: FileSpreadsheet,
+    tone: 'bg-muted text-muted-foreground',
+  },
+  {
+    title: '检查本地运行时',
+    description: '查看 daemon、agent 和 Claude 配置状态，确认任务可以在本机运行。',
+    icon: Wrench,
+    tone: 'bg-success/10 text-success',
   },
 ] as const
 
 export function HomeView() {
-  const { openExternal } = usePlatformCapabilities()
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-background">
-      <PageHeader className="gap-2">
-        <Sparkles className="size-4 text-muted-foreground" />
-        <h1 className="text-sm font-medium">工作区总览</h1>
-      </PageHeader>
-
-      <div className="flex flex-1 min-h-0 flex-col gap-6 overflow-y-auto p-4 md:p-6">
-        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Multica 风格主界面壳</p>
-              <h2 className="text-base font-medium">从共享页面，进入共享 dashboard</h2>
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                这一阶段先复刻主结构：左侧工作区导航、顶部页头、内容卡片区域。业务数据仍然用静态骨架，
-                重点先放在分层与界面密度，而不是复杂交互。
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => openExternal('https://github.com/multica-ai/multica')}
-              >
-                查看 multica 源码
-              </Button>
-              <Button>继续搭建界面</Button>
-            </div>
+    <div className="scrollbar-none flex h-full min-h-0 flex-col overflow-y-auto bg-background">
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 pb-12 pt-24">
+        <section className="flex items-center gap-4">
+          <div className="flex size-20 items-center justify-center rounded-full border border-border bg-card text-base font-medium">
+            LAT
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-base font-medium text-foreground">local-agent-team</h1>
+            <p className="text-sm text-muted-foreground">本地 agent 学习工作台，随时把任务交给运行时处理</p>
           </div>
         </section>
 
-        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {cards.map((card) => (
-            <article
-              key={card.title}
-              className="rounded-xl border border-border bg-card p-4"
+        <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <Link
+            to="/daemon"
+            className="block min-h-48 rounded-xl px-2 py-3 text-base text-muted-foreground outline-none transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            请输入任务，交给我来帮你完成
+          </Link>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" className="rounded-full">
+              <Plus className="size-4" />
+              选择文件
+            </Button>
+            <Link
+              to="/daemon"
+              aria-label="进入对话"
+              className="ml-auto inline-flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              <div className="mb-4 inline-flex rounded-md border border-border bg-muted p-2 text-muted-foreground">
-                <card.icon className="size-4" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-medium">{card.title}</h3>
-                <p className="text-sm text-muted-foreground">{card.description}</p>
-              </div>
-            </article>
-          ))}
+              <ArrowUp className="size-4" />
+            </Link>
+          </div>
         </section>
 
-        <section className="grid gap-3 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)]">
-          <article className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-medium">当前阶段目标</h3>
-                <p className="text-xs text-muted-foreground">先对齐 multica 的主界面层级，不急着补全业务深度。</p>
-              </div>
-              <Button variant="ghost" size="sm">查看文档</Button>
-            </div>
+        <section className="mt-8">
+          <div className="flex items-center gap-5">
+            {categories.map((category, index) => (
+              <button
+                key={category}
+                className={cn(
+                  'text-sm transition-colors hover:text-foreground',
+                  index === 0 ? 'font-medium text-foreground' : 'font-normal text-muted-foreground',
+                )}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
 
-            <div className="mt-4 space-y-2">
-              {[
-                '共享 sidebar 壳组件已经进入 @demo/ui。',
-                '共享 dashboard layout / page header 已进入 @demo/views。',
-                '平台能力依然通过 @demo/core 注入，不回退到平台直调。',
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="flex items-start gap-2 rounded-lg bg-muted/60 px-3 py-2"
-                >
-                  <span className="mt-1 size-1.5 rounded-full bg-foreground/50" />
-                  <p className="text-sm text-muted-foreground">{item}</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {suggestions.map((item) => (
+              <button
+                key={item.title}
+                type="button"
+                className="group min-h-40 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/40"
+              >
+                <div className="flex items-start gap-3">
+                  <span className={cn('mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md', item.tone)}>
+                    <item.icon className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="truncate text-sm font-medium text-foreground">{item.title}</h2>
+                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="rounded-xl border border-border bg-card p-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium">接下来会补什么</h3>
-              <p className="text-xs text-muted-foreground">按照 multica 的信息架构，逐步把壳层变成更真实的工作台。</p>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              {[
-                ['顶部筛选/显示控制区', '对齐 issues header 的信息密度和控件层级。'],
-                ['多页面导航', '把事项、项目、设置等页骨架从共享包挂起来。'],
-                ['主题与细节状态', '继续补暗色模式、激活态和移动端侧栏行为。'],
-              ].map(([title, description]) => (
-                <div key={title} className="space-y-1 border-b border-border pb-3 last:border-b-0 last:pb-0">
-                  <p className="text-sm font-medium">{title}</p>
-                  <p className="text-xs text-muted-foreground">{description}</p>
-                </div>
-              ))}
-            </div>
-          </article>
+                <ArrowUp className="ml-auto mt-5 size-4 text-muted-foreground/50 transition-colors group-hover:text-muted-foreground" />
+              </button>
+            ))}
+          </div>
         </section>
-      </div>
+      </main>
     </div>
   )
 }
